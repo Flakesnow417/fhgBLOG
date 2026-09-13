@@ -1,0 +1,170 @@
+/* ============================================
+   全站样式表 —— 只用一个文件控制整个网站的样貌
+   想改颜色？改下面 :root 里的变量就行，全站自动生效。
+   ============================================ */
+
+:root {
+  --bg: #FFFFFF;
+  --fg: hsl(137, 82%, 35%);
+  --muted: #4a4fe2;
+  --accent: #2b6cb0;
+  --line: #2b6cb0;
+  --max-width: 680px;
+}
+
+/* 当系统是深色模式时，自动切换成下面这套配色 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181c;
+    --fg: #e8e8e6;
+    --muted: #9a9a97;
+    --accent: #6aa5e0;
+    --line: #2a2d33;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 20px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  font-size: 17px;
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 48px 0 96px;
+}
+
+/* ---------- 顶部导航 ---------- */
+header.site-header {
+  padding: 24px 0 32px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 48px;
+}
+
+.site-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.site-title a { color: var(--fg); text-decoration: none; }
+
+nav.site-nav { margin-top: 12px; font-size: 15px; }
+
+nav.site-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  margin-right: 20px;
+}
+
+nav.site-nav a:hover { color: var(--accent); }
+
+/* ---------- 文章列表 ---------- */
+.post-list { list-style: none; padding: 0; margin: 0; }
+
+.post-list li {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.post-list li:last-child { border-bottom: none; }
+
+.post-list .date {
+  font-size: 14px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.post-list .title {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.post-list .title:hover { color: var(--accent); }
+
+.post-list .summary {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+/* ---------- 正文 ---------- */
+article h1 {
+  font-size: 28px;
+  line-height: 1.4;
+  margin: 0 0 8px;
+}
+
+article .meta {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 40px;
+}
+
+article h2 {
+  font-size: 21px;
+  margin: 40px 0 12px;
+}
+
+article p { margin: 18px 0; }
+
+article a { color: var(--accent); }
+
+article blockquote {
+  margin: 24px 0;
+  padding: 2px 0 2px 18px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+
+article code {
+  background: rgba(128, 128, 128, 0.14);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: "SF Mono", Consolas, monospace;
+}
+
+article pre {
+  background: rgba(128, 128, 128, 0.1);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+article pre code { background: none; padding: 0; }
+
+article img { max-width: 100%; border-radius: 8px; }
+
+/* ---------- 页脚 ---------- */
+footer.site-footer {
+  margin-top: 80px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 32px;
+  font-size: 15px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.back-link:hover { color: var(--accent); }

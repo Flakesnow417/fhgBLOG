@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="NT8HgjA1eaitZP7QsdIymh">
+<head data-page-node-id="bMqCKqJDgCGZETLgawbxSb">
+  <meta charset="UTF-8" data-page-node-id="0a1swVPHuFJxfjN0vJ6tXr">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="kcPX8xjsGmy7Gnrd4Q45Sp">
+  <title>学习笔记：我今天搞懂了「静态网站」 · 我的博客</title>
+  <link rel="stylesheet" href="../style.css" data-page-node-id="a6QZ1lQrZvDxrqNwLJElJK">
+</head>
+<body data-page-node-id="jWSbZKP2HaGqUfcPEWbbfO">
+  <div class="container" data-page-node-id="zDMQDxrmFtEhcs26CAC69i">
+
+    <header class="site-header" data-page-node-id="X3EmkOyHt98pJHZ5wAS7eS">
+      <div class="site-title" data-page-node-id="B6waxMgWRcGDcjiz9kw4Lu"><a href="../index.html" data-page-node-id="jnnE3K88QYi3pjp7iHPY3W">我的博客</a></div>
+      <nav class="site-nav" data-page-node-id="jQK3LvWhaTAc17C3MXpOuk">
+        <a href="../index.html" data-page-node-id="pCPIGhpxHJozNvUi9mevZm">首页</a>
+        <a href="../about.html" data-page-node-id="ZqpMDDp3WeumwTWu6vPBEB">关于</a>
+      </nav>
+    </header>
+
+    <main data-page-node-id="fKj5KmIxRBZBRhutUsaF9W">
+      <article data-page-node-id="cavhpwiCzHGlQL7d4VLGGf">
+        <a class="back-link" href="../index.html" data-page-node-id="9qKHiFREHLGi9XorHo7VKN">← 回到列表</a>
+
+        <h1 data-page-node-id="b2zERFpki3iRkog2t1MdJl">学习笔记：我今天搞懂了「静态网站」</h1>
+        <div class="meta" data-page-node-id="Uk2bVqyj5OWLB7sOwx53Sx">2026-09-11</div>
+
+        <p data-page-node-id="FJTxTvbFBe0xQgNqwjmS5v">以前我一直以为「网站」这种东西，背后一定有一台二十四小时开着的电脑，里面装着数据库，用户一访问它就去查数据、拼页面。所以一听到「自己做网站」就觉得门槛很高。</p>
+
+        <p data-page-node-id="6JPgS1zk8MVKtClHZuI7pI">今天才明白，至少有一大类网站完全不是这样运作的。</p>
+
+        <h2 data-page-node-id="ILo7LMPyAF1A5zkUmTU0y3">浏览器其实只认识三样东西</h2>
+
+        <p data-page-node-id="7SkTdPvMtJSlwNwMqoJjgR">HTML 决定页面上有什么内容，CSS 决定长什么样，JavaScript 决定能做什么交互。除此之外它什么都不要——不需要你去连数据库，也不需要你去问服务器。</p>
+
+        <p data-page-node-id="1DaFr5zAlPfXsC2rkDyAF0">所以，只要我提前把 HTML 文件写好，放在一个能被访问到的地址上，任何人打开浏览器访问那个地址，就能看到我的页面。这就是静态网站。</p>
+
+        <h2 data-page-node-id="IupLwOYczn1Wqhfh3SnCcq">那「服务器」到底在干嘛</h2>
+
+        <p data-page-node-id="R3mew54USM7aw44icWwlgs">在这种模式下，服务器做的事情极其简单：你说「我要 <code data-page-node-id="gMUTCxSVED5hxRVlJfr1su">/posts/hello-world.html</code>」，它就把这个文件原封不动递给你。它不计算、不查库、不拼页面，本质上就是一个「文件柜 + 快递员」。</p>
+
+        <p data-page-node-id="LA12ST7kqAuce5kG2hBgo6">正因为这么简单，它有几个顺理成章的好处：</p>
+
+        <p data-page-node-id="IkNr2CSweJCF2ALRSAqUTE">快——没有计算过程，文件直接从离用户最近的节点送出去。<br data-page-node-id="EU0idNEWOyllujFkZHkzEa">
+        安全——没有数据库，就没有注入漏洞可言，也没有插件需要天天打补丁。<br data-page-node-id="ymyeFkqOv9KSFnPsJqfDQa">
+        便宜——甚至可以是免费的，因为托管方几乎没有成本。<br data-page-node-id="v9YYkw2QiMmIiqMn6JamyB">
+        省心——不会半夜挂掉，不需要运维。</p>
+
+        <h2 data-page-node-id="D9g9T76WspJUxNtTsyCDZ0">那「动态网站」存在的意义是什么</h2>
+
+        <p data-page-node-id="jXYAbsjBO8XgVHT07MiQKp">当你需要根据「谁在访问」给出不同内容的时候——比如登录后看到自己的订单、实时刷新的评论区——静态文件就不够了，必须有程序在后台现场计算。这才是数据库和服务器真正发挥作用的地方。</p>
+
+        <p data-page-node-id="dKjSVihz5Ea1YI6flqxUsH">而博客恰恰不需要这些。我写一篇文章，所有人看到的都是同一份内容，那它就是天生的静态内容。用动态网站来做博客，属于用卡车送一封信。</p>
+
+        <blockquote data-page-node-id="fLwcS7Wj3upYZah3Sp9Sk0">先想清楚你的内容是不是「每个人看到的都一样」。是的话，静态就够了。</blockquote>
+
+        <h2 data-page-node-id="d2FrPMw74tiArWZoFEQtw6">今天的结论</h2>
+
+        <p data-page-node-id="S8xwu2SZN3N3DGPwOVOiHr">我要做的东西是静态网站。免费托管、不要服务器、不要数据库。下一步要学的，是当文章多起来之后，怎么不用一篇篇手写 HTML——据说有个东西叫静态站点生成器，能把 Markdown 自动变成页面。</p>
+      </article>
+    </main>
+
+    <footer class="site-footer" data-page-node-id="DXXYhrCLajv24Tum4SOsRP">
+      © 2026 我的博客
+    </footer>
+
+  </div>
+</body>
+</html>
