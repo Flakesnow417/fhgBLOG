@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>想法集 · 一念未落</title>
+  <meta name="description" content="所有还没成形的念头都收在这里。萌芽、生长、已成。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='3' y='3' width='58' height='58' rx='9' fill='%23a8322d'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' fill='%23f4f1e8' font-family='KaiTi,serif'%3E念%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="idea-page">
+
+  <header class="idea-head">
+    <a class="idea-brand" href="index.html">一念未落</a>
+    <nav class="idea-nav">
+      <a href="index.html">首页</a>
+      <a href="ideas.html">想法集</a>
+      <a href="about.html">关于</a>
+    </nav>
+  </header>
+
+  <main class="idea-main">
+    <div class="idea-pagehead">
+      <h1>想法集</h1>
+      <p class="idea-lead">萌芽 · 生长 · 已成 —— 未落之念，皆在此册。</p>
+      <hr class="idea-rule">
+    </div>
+
+    <!-- 卡片由 assets/ideas-data.js 驱动，JS 在下方渲染 -->
+    <div class="idea-grid" id="idea-grid">
+      <noscript>
+        <p style="color:var(--mo-light)">需要启用 JavaScript 才能看到想法列表；
+        也可以直接打开 ideas/ 目录里的详情页。</p>
+      </noscript>
+    </div>
+
+    <div class="idea-hint">
+      新增一条想法：打开 <code>assets/ideas-data.js</code>，照着现有条目抄一段、改内容即可，
+      卡片会自动出现。想写长文，就在 <code>ideas/</code> 目录建一个页面，把 <code>href</code> 指过去。
+    </div>
+  </main>
+
+  <footer class="idea-foot">© 2026 一念未落 · 未成之想，皆可入册</footer>
+
+  <script src="assets/ideas-data.js"></script>
+  <script>
+    /* 渲染想法卡片：数据 → HTML 的唯一入口 */
+    (function () {
+      var box = document.getElementById("idea-grid");
+      if (!box || !window.IDEAS) return;
+
+      var STATUS = {
+        seed:    ["萌芽", "idea-chip--seed"],
+        growing: ["生长", "idea-chip--growing"],
+        done:    ["已成", "idea-chip--done"]
+      };
+
+      /* 转义，防止想法里的特殊字符破坏页面 */
+      function esc(s) {
+        return String(s).replace(/[&<>"]/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+        });
+      }
+
+      window.IDEAS.forEach(function (idea, i) {
+        var st = STATUS[idea.status] || STATUS.seed;
+
+        var a = document.createElement("a");
+        a.className = "idea-card idea-rise";
+        a.style.animationDelay = (i * 0.12 + 0.1) + "s";
+        if (idea.href) a.href = idea.href;
+
+        var tags = (idea.tags || []).map(function (t) {
+          return "<span>#" + esc(t) + "</span>";
+        }).join("");
+
+        a.innerHTML =
+          "<h2>" + esc(idea.title) + "</h2>" +
+          "<p>" + esc(idea.summary) + "</p>" +
+          '<div class="idea-cardmeta">' +
+            '<span class="idea-chip ' + st[1] + '">' + st[0] + "</span>" +
+            "<span>" + esc(idea.date) + "</span>" +
+            tags +
+            (idea.href ? '<span class="idea-cardmore">展开 →</span>' : "") +
+          "</div>";
+
+        box.appendChild(a);
+      });
+    })();
+  </script>
+  <script src="assets/ink.js"></script>
+</body>
+</html>

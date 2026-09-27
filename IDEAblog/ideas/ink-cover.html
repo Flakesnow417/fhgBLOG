@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>封面即一幅画 · 一念未落</title>
+  <meta name="description" content="把《万妖图录传》式的封面搬进浏览器：太极漩涡、宣纸颗粒、竖排题字、朱砂印章。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='3' y='3' width='58' height='58' rx='9' fill='%23a8322d'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' fill='%23f4f1e8' font-family='KaiTi,serif'%3E念%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="idea-page">
+
+  <header class="idea-head">
+    <a class="idea-brand" href="../index.html">一念未落</a>
+    <nav class="idea-nav">
+      <a href="../index.html">首页</a>
+      <a href="../ideas.html">想法集</a>
+      <a href="../about.html">关于</a>
+    </nav>
+  </header>
+
+  <main class="idea-main">
+    <article class="idea-art">
+      <a class="idea-back" href="../ideas.html">← 返回想法集</a>
+
+      <h1>封面即一幅画</h1>
+      <div class="idea-meta">
+        <span class="idea-chip idea-chip--growing">生长</span>
+        <span>2026-09-27</span>
+        <span>#水墨</span>
+        <span>#SVG</span>
+      </div>
+      <hr class="idea-rule">
+
+      <p>灵感来自抖音上《万妖图录传》的封面：黑白水墨的底子，一张巨大的太极星云在背后缓缓转，云雾像墨滴进水里那样洇开，竖排的毛笔字题在画面一侧，角落一方朱砂印。第一次看到就想——能不能把这种东西搬进自己的网页里？不是截图贴图，是真的「画」出来。</p>
+
+      <p>拆开看，那画面其实是六个元素的组合：<strong>太极漩涡、墨云晕染、宣纸颗粒、竖排题字、印章、大面积留白</strong>。逐个问自己能不能用代码画——漩涡用一圈圈虚线圆加缓慢旋转；宣纸颗粒是一小块可以平铺的噪点；竖排字是 CSS 的 writing-mode；印章就是一个朱砂色的小方块加两个字。全部可以，而且一分钱图片都不用。</p>
+
+      <blockquote class="idea-quote">画面被裁切掉的部分，留给想象去补全。</blockquote>
+
+      <p>取舍也有。真实的墨迹洇开很难用代码骗过眼睛，所以背景、纹理、印章这些交给 SVG 滤镜去做；但「剪影人物」和真正有呼吸感的墨云，代码做出来会显得假。这两样留了位置，等想清楚了再用 AI 生成或者自己找素材补进去——补不补都行，现在的纯代码版已经能看。</p>
+
+      <p>下一步：先让这版封面跑一阵子，看视觉会不会腻；真要升级，就从「墨云主视觉」这张图开始试。</p>
+
+      <div class="idea-endseal">
+        <div class="idea-seal idea-seal--sm" aria-hidden="true">未完</div>
+        <span>此想法仍在生长。</span>
+      </div>
+    </article>
+  </main>
+
+  <footer class="idea-foot">© 2026 一念未落 · 未成之想，皆可入册</footer>
+
+  <script src="../assets/ink.js"></script>
+</body>
+</html>

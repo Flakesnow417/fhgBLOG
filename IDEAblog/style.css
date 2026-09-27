@@ -1,0 +1,584 @@
+/* ============================================================
+   一念未落 · IDEAblog 水墨样式表
+   ------------------------------------------------------------
+   与根目录学习站的 style.css 完全独立，互不影响。
+   所有类名都以 .idea- 开头，防止任何潜在冲突。
+
+   想改整体感觉，认这几个变量：
+     颜色  : --xuan(宣纸) --mo(墨) --zhu(朱砂/印章专用)
+             --mo-lv(墨绿) --zhe(赭石)
+     字体  : --font-brush(毛笔) --font-serif(正文宋)
+   ============================================================ */
+
+:root {
+  --xuan: #f4f1e8;       /* 宣纸米白：全站底色 */
+  --xuan-deep: #eae5d8;  /* 宣纸暗部 */
+  --mo: #1c1a17;         /* 焦墨：主文字 */
+  --mo-mid: #4a4640;     /* 重墨：次级文字 */
+  --mo-light: #8a8478;   /* 淡墨：辅助信息 */
+  --zhu: #a8322d;        /* 朱砂：只许用在印章与强调 */
+  --mo-lv: #3d4f45;      /* 墨绿：链接悬停、点缀 */
+  --zhe: #8a5a30;        /* 赭石：日期、标签 */
+
+  --font-brush: "Ma Shan Zheng", "STKaiti", "KaiTi", "楷体", serif;
+  --font-serif: "Noto Serif SC", "STSong", "SimSun", serif;
+
+  /* 宣纸颗粒：一块可平铺的 SVG 噪点，叠在底色上 */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
+}
+
+/* ---------- 底 ---------- */
+
+body.idea-page {
+  margin: 0;
+  background-color: var(--xuan);
+  background-image: var(--paper-grain);
+  color: var(--mo);
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.9;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(168, 50, 45, .18);
+}
+
+/* ---------- 顶栏（子页用流式；封面用 --hero 覆盖为浮层） ---------- */
+
+.idea-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px clamp(18px, 4vw, 44px);
+  color: var(--mo);
+  border-bottom: 1px solid rgba(28, 26, 23, .08);
+}
+
+.idea-head--hero {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 4;
+  color: rgba(244, 241, 232, .92);
+  border-bottom: 0;
+}
+
+.idea-brand {
+  font-family: var(--font-brush);
+  font-size: 22px;
+  letter-spacing: .1em;
+  color: inherit;
+  text-decoration: none;
+  opacity: .95;
+}
+
+.idea-nav a {
+  position: relative;
+  margin-left: clamp(16px, 2.4vw, 30px);
+  color: inherit;
+  text-decoration: none;
+  font-size: 14px;
+  letter-spacing: .18em;
+  opacity: .78;
+  transition: opacity .3s ease, color .3s ease;
+}
+
+/* 悬停时从左往右长出的墨线 */
+.idea-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 100%; bottom: -5px;
+  height: 1px;
+  background: currentColor;
+  transition: right .35s ease;
+}
+
+.idea-nav a:hover { opacity: 1; color: var(--mo-lv); }
+.idea-nav a:hover::after { right: 0; }
+.idea-head--hero .idea-nav a:hover { color: #fff; }
+
+/* ---------- 封面 ---------- */
+
+.idea-hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+}
+
+/* 参考图的「上下黑边」：深墨渐变压住画面上下 */
+.idea-hero::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 110px;
+  background: linear-gradient(180deg, rgba(23, 21, 18, .92), rgba(23, 21, 18, 0));
+  z-index: 2;
+  pointer-events: none;
+}
+
+.idea-hero::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 160px;
+  background: linear-gradient(0deg, rgba(23, 21, 18, .94), rgba(23, 21, 18, 0));
+  z-index: 2;
+  pointer-events: none;
+}
+
+.idea-swirl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* 漩涡环整体极慢旋转（星云感）；transform-box 让它绕自身中心转 */
+.idea-swirlring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: idea-spin 240s linear infinite;
+}
+
+.idea-taiji {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: idea-spin 480s linear infinite reverse;
+}
+
+/* 竖排题字块：右侧偏上，条幅式留白 */
+.idea-titleblock {
+  position: absolute;
+  top: 13vh;
+  right: clamp(5vw, 9vw, 12vw);
+  z-index: 3;
+  display: flex;
+  gap: clamp(16px, 3.2vw, 42px);
+  align-items: flex-start;
+}
+
+.idea-vtitle {
+  margin: 0;
+  writing-mode: vertical-rl;
+  font-family: var(--font-brush);
+  font-weight: 400;
+  font-size: clamp(56px, 10.5vw, 126px);
+  line-height: 1.05;
+  color: var(--mo);
+  text-shadow: 0 0 16px rgba(244, 241, 232, .45);
+}
+
+.idea-vtitle span {
+  display: inline-block;
+  opacity: 0;
+  animation: idea-rise 1s ease forwards;
+}
+
+.idea-vtitle span:nth-child(1) { animation-delay: .15s; }
+.idea-vtitle span:nth-child(2) { animation-delay: .32s; }
+.idea-vtitle span:nth-child(3) { animation-delay: .49s; }
+.idea-vtitle span:nth-child(4) { animation-delay: .66s; }
+
+/* 副题 + 印章 一列 */
+.idea-subcol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  padding-top: 12px;
+}
+
+.idea-vsub {
+  margin: 0;
+  writing-mode: vertical-rl;
+  font-family: var(--font-serif);
+  font-size: clamp(15px, 1.8vw, 19px);
+  line-height: 2.1;
+  letter-spacing: .16em;
+  color: var(--mo-mid);
+  opacity: 0;
+  animation: idea-rise 1.2s ease .95s forwards;
+}
+
+/* 印章：朱砂底 + 宣纸色字（阳文），微旋转模拟手盖 */
+.idea-seal {
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 100px;
+  font-family: var(--font-brush);
+  font-size: 30px;
+  letter-spacing: .14em;
+  background-color: var(--zhu);
+  background-image:
+    radial-gradient(circle at 32% 26%, rgba(255, 246, 238, .16), rgba(0, 0, 0, 0) 58%),
+    radial-gradient(circle at 74% 82%, rgba(40, 6, 4, .28), rgba(0, 0, 0, 0) 52%);
+  color: var(--xuan);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 2px rgba(244, 241, 232, .26),
+    inset 0 0 14px rgba(46, 8, 6, .5);
+  transform: rotate(1.5deg);
+  opacity: 0;
+  animation: idea-seal-in 1s ease 1.35s forwards;
+  user-select: none;
+}
+
+/* 封面入口：墨滴向下引路 */
+.idea-enter {
+  position: absolute;
+  left: 50%;
+  bottom: 92px;
+  z-index: 3;
+  color: rgba(244, 241, 232, .92);
+  text-decoration: none;
+  font-size: 15px;
+  letter-spacing: .5em;
+  padding: 8px 4px 4px;
+  opacity: 0;
+  animation: idea-enter-in 1s ease 1.7s forwards;
+}
+
+.idea-enter:hover { color: #fff; }
+
+.idea-enter::after {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 36px;
+  margin: 10px auto 0;
+  background: linear-gradient(180deg, rgba(244, 241, 232, .85), transparent);
+  transform-origin: top center;
+  animation: idea-drip 2.8s ease-in-out infinite;
+}
+
+/* ---------- 子页公共 ---------- */
+
+.idea-main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: clamp(30px, 6vh, 64px) 22px 90px;
+}
+
+.idea-pagehead h1 {
+  margin: 0 0 6px;
+  font-family: var(--font-brush);
+  font-weight: 400;
+  font-size: clamp(38px, 6vw, 54px);
+  line-height: 1.2;
+}
+
+.idea-lead {
+  margin: 0;
+  color: var(--mo-mid);
+  font-size: 15.5px;
+  letter-spacing: .04em;
+}
+
+/* 一条渐隐的墨线，当分隔 */
+.idea-rule {
+  height: 1px;
+  border: 0;
+  margin: 26px 0 42px;
+  background: linear-gradient(90deg, rgba(28, 26, 23, .5), rgba(28, 26, 23, .08) 70%, transparent);
+}
+
+/* ---------- 想法卡片 ---------- */
+
+.idea-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 26px;
+}
+
+.idea-card {
+  position: relative;
+  display: block;
+  padding: 26px 24px 20px;
+  background: rgba(255, 253, 246, .55);
+  border: 1px solid rgba(28, 26, 23, .14);
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+}
+
+/* 卡片顶部一道笔锋：由浓到淡 */
+.idea-card::before {
+  content: "";
+  display: block;
+  height: 3px;
+  margin: -26px -24px 22px;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(90deg, rgba(28, 26, 23, .58), rgba(28, 26, 23, .1) 60%, transparent);
+}
+
+.idea-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(28, 26, 23, .32);
+  box-shadow: 0 16px 32px -20px rgba(28, 26, 23, .4);
+}
+
+.idea-card h2 {
+  margin: 2px 0 10px;
+  font-family: var(--font-brush);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.3;
+  color: var(--mo);
+}
+
+.idea-card p {
+  margin: 0 0 16px;
+  color: var(--mo-mid);
+  font-size: 15px;
+  line-height: 1.85;
+}
+
+.idea-cardmeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--zhe);
+  letter-spacing: .05em;
+}
+
+.idea-cardmore {
+  margin-left: auto;
+  color: var(--mo-light);
+  transition: color .3s ease;
+}
+
+.idea-card:hover .idea-cardmore { color: var(--mo-lv); }
+
+/* 状态章：萌芽=朱砂 生长=墨绿 已成=赭石 */
+.idea-chip {
+  display: inline-block;
+  padding: 3px 10px 2px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-size: 12px;
+  letter-spacing: .3em;
+  text-indent: .3em;
+  line-height: 1.5;
+}
+
+.idea-chip--seed    { color: var(--zhu); }
+.idea-chip--growing { color: var(--mo-lv); }
+.idea-chip--done    { color: var(--zhe); }
+
+/* 「怎么加新想法」提示框 */
+.idea-hint {
+  margin-top: 46px;
+  padding: 16px 18px;
+  border: 1px dashed rgba(28, 26, 23, .28);
+  border-radius: 6px;
+  color: var(--mo-light);
+  font-size: 14px;
+  line-height: 2;
+}
+
+.idea-hint code {
+  font-family: Consolas, "SF Mono", monospace;
+  font-size: 13px;
+  color: var(--mo-lv);
+  background: rgba(28, 26, 23, .06);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+/* ---------- 想法详情页 ---------- */
+
+.idea-art { max-width: 720px; }
+
+.idea-back {
+  display: inline-block;
+  margin-bottom: 28px;
+  color: var(--mo-light);
+  text-decoration: none;
+  font-size: 14px;
+  letter-spacing: .08em;
+}
+
+.idea-back:hover { color: var(--mo-lv); }
+
+.idea-art h1 {
+  margin: 0 0 10px;
+  font-family: var(--font-brush);
+  font-weight: 400;
+  font-size: clamp(34px, 5vw, 46px);
+  line-height: 1.25;
+}
+
+.idea-art .idea-rule { margin: 18px 0 36px; }
+
+.idea-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+  color: var(--mo-light);
+  letter-spacing: .05em;
+}
+
+.idea-art p { margin: 22px 0; }
+
+.idea-art code, .idea-art strong { font-weight: 600; }
+
+.idea-art code {
+  font-family: Consolas, "SF Mono", monospace;
+  font-size: .86em;
+  color: var(--mo-lv);
+  background: rgba(28, 26, 23, .06);
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+
+.idea-quote {
+  margin: 32px 0;
+  padding: 2px 0 2px 20px;
+  border-left: 3px solid var(--mo-lv);
+  color: var(--mo-mid);
+  font-style: normal;
+}
+
+/* 文末小印 */
+.idea-endseal {
+  margin-top: 48px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--mo-light);
+  font-size: 13px;
+  letter-spacing: .12em;
+}
+
+.idea-seal--sm {
+  width: 40px;
+  height: 40px;
+  writing-mode: horizontal-tb;
+  font-size: 17px;
+  letter-spacing: .08em;
+  text-indent: .08em;
+  opacity: 0;
+  animation: idea-seal-in .9s ease .6s forwards;
+}
+
+/* ---------- 页脚 ---------- */
+
+.idea-foot {
+  text-align: center;
+  padding: 26px 16px 30px;
+  color: var(--mo-light);
+  font-size: 13px;
+  letter-spacing: .14em;
+  border-top: 1px solid rgba(28, 26, 23, .1);
+}
+
+.idea-foot--hero {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 3;
+  border-top: 0;
+  color: rgba(244, 241, 232, .5);
+}
+
+/* ---------- 鼠标墨迹（ink.js 生成） ---------- */
+
+.idea-ink-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 60;
+}
+
+.idea-ink {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%,
+    rgba(28, 26, 23, .36),
+    rgba(28, 26, 23, .06) 60%,
+    transparent 74%);
+  transform: translate(-50%, -50%) scale(.25);
+  animation: idea-inkpop 1.4s ease-out forwards;
+}
+
+.idea-ink--big {
+  background: radial-gradient(circle at 45% 45%,
+    rgba(28, 26, 23, .5),
+    rgba(28, 26, 23, .2) 46%,
+    transparent 72%);
+  border-radius: 46% 54% 52% 48% / 52% 46% 54% 48%;
+  animation-duration: 2.1s;
+}
+
+/* ---------- 动画 ---------- */
+
+.idea-rise {
+  opacity: 0;
+  animation: idea-rise .95s ease forwards;
+}
+
+@keyframes idea-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes idea-seal-in {
+  from { opacity: 0; transform: rotate(5deg) translateY(14px); }
+  to   { opacity: 1; transform: rotate(1.5deg); }
+}
+
+@keyframes idea-enter-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%); }
+}
+
+@keyframes idea-drip {
+  0%, 100% { transform: scaleY(.35); opacity: .35; }
+  50%      { transform: scaleY(1);   opacity: .85; }
+}
+
+@keyframes idea-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes idea-inkpop {
+  0%   { opacity: .85; transform: translate(-50%, -50%) scale(.25); }
+  70%  { opacity: .22; }
+  100% { opacity: 0;   transform: translate(calc(-50% + var(--dx, 0px)), -50%) scale(1.55); }
+}
+
+/* ---------- 响应式 ---------- */
+
+@media (max-width: 640px) {
+  .idea-titleblock { top: 15vh; right: 7vw; }
+  .idea-subcol { gap: 16px; }
+  .idea-hero::after { height: 130px; }
+  .idea-enter { bottom: 68px; }
+  .idea-grid { grid-template-columns: 1fr; }
+}
+
+/* 尊重系统「减少动态」设置：全部动画关掉，内容直接呈现 */
+@media (prefers-reduced-motion: reduce) {
+  .idea-rise, .idea-vtitle span, .idea-vsub, .idea-enter,
+  .idea-swirlring, .idea-taiji, .idea-ink {
+    animation: none !important;
+  }
+  .idea-rise, .idea-vtitle span, .idea-vsub, .idea-enter,
+  .idea-seal:not(.idea-seal--sm), .idea-seal--sm {
+    opacity: 1 !important;
+  }
+  .idea-seal:not(.idea-seal--sm) { transform: rotate(1.5deg) !important; }
+  .idea-enter { transform: translateX(-50%) !important; }
+  .idea-enter::after { animation: none !important; }
+}

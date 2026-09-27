@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>一念未落 · 想法集</title>
+  <meta name="description" content="未成之想，皆可入册。一个只放创意想法的水墨角落。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='3' y='3' width='58' height='58' rx='9' fill='%23a8322d'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' fill='%23f4f1e8' font-family='KaiTi,serif'%3E念%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="idea-page">
+
+  <header class="idea-head idea-head--hero">
+    <a class="idea-brand" href="index.html">一念未落</a>
+    <nav class="idea-nav">
+      <a href="index.html">首页</a>
+      <a href="ideas.html">想法集</a>
+      <a href="about.html">关于</a>
+    </nav>
+  </header>
+
+  <main class="idea-hero">
+
+    <!-- ======== 主视觉：太极星云 · 纯 SVG 手绘 ======== -->
+    <svg class="idea-swirl" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <defs>
+        <!-- 径向渐隐：让漩涡向四周化开，融进宣纸 -->
+        <radialGradient id="ideaFade" cx="36%" cy="50%" r="70%">
+          <stop offset="0%"  stop-color="#fff"/>
+          <stop offset="55%" stop-color="#fff"/>
+          <stop offset="100%" stop-color="#000"/>
+        </radialGradient>
+        <mask id="ideaMask">
+          <rect width="1200" height="800" fill="url(#ideaFade)"/>
+        </mask>
+
+        <!-- 大模糊：墨云用的 -->
+        <filter id="ideaSoft" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="16"/>
+        </filter>
+        <!-- 小模糊：外圈淡环用的 -->
+        <filter id="ideaSoft2" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="4.5"/>
+        </filter>
+        <!-- 墨边：用噪声把几何线条打毛，去掉「电脑画」的感觉 -->
+        <filter id="ideaInk" x="-25%" y="-25%" width="150%" height="150%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="7" result="n"/>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="13"/>
+        </filter>
+      </defs>
+
+      <g mask="url(#ideaMask)">
+
+        <!-- 远处墨云（重墨大面积低透明度） -->
+        <ellipse cx="170" cy="120"  rx="230" ry="120" fill="#2b2721" opacity="0.06" filter="url(#ideaSoft)"/>
+        <ellipse cx="1060" cy="690" rx="270" ry="150" fill="#2b2721" opacity="0.07" filter="url(#ideaSoft)"/>
+        <ellipse cx="720" cy="55"   rx="300" ry="90"  fill="#2b2721" opacity="0.05" filter="url(#ideaSoft)"/>
+
+        <!-- 星云漩涡环（虚线断续 + 各自不同角度，整体极慢旋转） -->
+        <g class="idea-swirlring" stroke="#33302a" fill="none">
+          <circle cx="430" cy="400" r="300" stroke-width="1.4" stroke-dasharray="60 34 90 50 130 70" opacity="0.30"/>
+          <circle cx="430" cy="400" r="345" stroke-width="1.1" stroke-dasharray="120 80 40 160"     opacity="0.20"/>
+          <circle cx="430" cy="400" r="390" stroke-width="1.6" stroke-dasharray="40 100 160 60"     opacity="0.17" filter="url(#ideaSoft2)"/>
+          <circle cx="430" cy="400" r="440" stroke-width="1"   stroke-dasharray="200 120"           opacity="0.12"/>
+          <circle cx="430" cy="400" r="500" stroke-width="2.2" stroke-dasharray="26 140"            opacity="0.10" filter="url(#ideaSoft2)"/>
+          <circle cx="430" cy="400" r="560" stroke-width="1"   stroke-dasharray="90 200"            opacity="0.08"/>
+          <circle cx="430" cy="400" r="620" stroke-width="9"   stroke-dasharray="3 300"             opacity="0.05" filter="url(#ideaSoft)"/>
+        </g>
+
+        <!-- 太极：外圆 + S 线 + 两眼，墨边滤镜打毛，反向更慢地转 -->
+        <g class="idea-taiji" filter="url(#ideaInk)" opacity="0.72">
+          <circle cx="430" cy="400" r="238" fill="none" stroke="#26231e" stroke-width="7"/>
+          <path d="M 430 162 A 119 119 0 0 1 430 400 A 119 119 0 0 0 430 638"
+                fill="none" stroke="#26231e" stroke-width="6"/>
+          <circle cx="430" cy="281" r="30" fill="none" stroke="#26231e" stroke-width="5"/>
+          <circle cx="430" cy="519" r="30" fill="none" stroke="#26231e" stroke-width="5"/>
+          <!-- 阴面淡淡填充一层墨 -->
+          <path d="M 430 162 A 238 238 0 0 0 430 638 A 119 119 0 0 1 430 400 A 119 119 0 0 0 430 162 Z"
+                fill="#26231e" opacity="0.14"/>
+        </g>
+
+        <!-- 飞墨：散落的墨点 -->
+        <g fill="#26231e">
+          <circle cx="150" cy="330" r="5"   opacity="0.5"/>
+          <circle cx="205" cy="520" r="3"   opacity="0.35"/>
+          <circle cx="760" cy="250" r="4"   opacity="0.45"/>
+          <circle cx="820" cy="470" r="6"   opacity="0.30" filter="url(#ideaSoft2)"/>
+          <circle cx="640" cy="640" r="3.5" opacity="0.4"/>
+          <circle cx="300" cy="180" r="2.5" opacity="0.35"/>
+          <circle cx="920" cy="180" r="3"   opacity="0.30"/>
+          <circle cx="520" cy="720" r="4"   opacity="0.35"/>
+          <circle cx="960" cy="560" r="2"   opacity="0.3"/>
+          <circle cx="70"  cy="620" r="2.5" opacity="0.28"/>
+        </g>
+      </g>
+    </svg>
+
+    <!-- ======== 竖排题字：主标题 + 副题 + 印章 ======== -->
+    <div class="idea-titleblock">
+      <div class="idea-subcol">
+        <p class="idea-vsub">想法未必要成熟，<br>才配被写下来</p>
+        <div class="idea-seal" aria-hidden="true">入畫</div>
+      </div>
+      <h1 class="idea-vtitle"><span>一</span><span>念</span><span>未</span><span>落</span></h1>
+    </div>
+
+    <!-- 入口 -->
+    <a class="idea-enter" href="ideas.html">落笔入册</a>
+
+    <footer class="idea-foot idea-foot--hero">© 2026 一念未落 · 未成之想，皆可入册</footer>
+  </main>
+
+  <script src="assets/ink.js"></script>
+</body>
+</html>
