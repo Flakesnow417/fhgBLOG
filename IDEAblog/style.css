@@ -686,6 +686,70 @@ body.idea-page {
   text-indent: .3em;
 }
 
+/* ============================================================
+   想法棋局（ideas.html 3D 棋盘）
+   ============================================================ */
+
+.idea-board-wrap {
+  position: relative;
+  height: min(72vh, 700px);
+  margin-bottom: 36px;
+  border: 1px solid rgba(28, 26, 23, .16);
+  border-radius: 6px;
+  overflow: hidden;
+  background: radial-gradient(120% 100% at 50% 28%, #faf7ee 0%, var(--xuan) 55%, #e4ddc9 100%);
+  cursor: grab;
+}
+
+.idea-board-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 图例：棋子材质 = 想法状态 */
+.idea-board-legend {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  padding: 6px 12px;
+  background: rgba(244, 241, 232, .85);
+  border: 1px solid rgba(28, 26, 23, .12);
+  border-radius: 3px;
+  color: var(--mo-mid);
+  font-size: 12px;
+  letter-spacing: .12em;
+  pointer-events: none;
+}
+
+.idea-board-legend b { font-weight: 600; color: var(--mo); }
+
+/* 右上角操作提示 */
+.idea-board-op {
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  color: var(--mo-light);
+  font-size: 12px;
+  letter-spacing: .2em;
+  pointer-events: none;
+}
+
+/* 3D 就绪后，卡片降级区隐藏 */
+body.idea-board-3d .idea-grid { display: none; }
+
+/* 浅色页面用的提示牌变体（棋盘页） */
+.idea-tagtip--light {
+  background: rgba(244, 241, 232, .94);
+  border-color: rgba(28, 26, 23, .25);
+  color: var(--mo);
+}
+
+@media (max-width: 640px) {
+  .idea-board-wrap { height: 56vh; }
+  .idea-board-op { display: none; }
+}
+
 /* ---------- 墨迹交互（ink.js 生成） ---------- */
 
 .idea-ink-layer {
