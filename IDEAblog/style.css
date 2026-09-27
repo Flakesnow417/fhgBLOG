@@ -981,13 +981,13 @@ body.idea-page.night-bg {
 
 .idea-page.night-bg .idea-board-wrap {
   height: min(76vh, 760px);
-  border: 1px solid rgba(146, 74, 118, .32);
+  border: 1px solid rgba(88, 138, 112, .30);
   border-radius: 3px;
   background: transparent;         /* Canvas 里的星野直接透到页面上 */
   box-shadow:
-    0 0 0 1px rgba(146, 74, 118, .06),
+    0 0 0 1px rgba(88, 138, 112, .05),
     0 30px 80px -40px rgba(0, 0, 0, .95),
-    0 0 90px -30px rgba(120, 40, 90, .35);
+    0 0 90px -34px rgba(60, 120, 90, .30);
 }
 
 /* 扫描线几乎收干净：毡面不要 CRT 味 */
@@ -998,9 +998,9 @@ body.idea-page.night-bg {
 }
 
 .idea-page.night-bg .idea-board-legend {
-  background: rgba(10, 8, 16, .62);
-  border-color: rgba(146, 74, 118, .38);
-  color: rgba(198, 182, 196, .86);
+  background: rgba(8, 12, 12, .62);
+  border-color: rgba(88, 138, 112, .40);
+  color: rgba(196, 208, 198, .88);
   backdrop-filter: blur(4px);
 }
 
@@ -1010,7 +1010,7 @@ body.idea-page.night-bg {
 }
 
 .idea-page.night-bg .idea-board-op {
-  color: rgba(170, 158, 176, .42);
+  color: rgba(178, 196, 184, .44);
 }
 
 /* ---------- 想法卡片（3D 降级时出现 · 夜版玻璃卡） ---------- */

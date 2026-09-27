@@ -3,13 +3,15 @@
    ------------------------------------------------------------
    创意：想法集 = 一盘没下完的棋。
      前排 = 你的想法（可点的棋子）：
-       萌芽 = 原木（还没雕完）/ 生长 = 鎏金（正在发力）/ 已成 = 墨玉（黑亮沉淀）
-     后排 = 未落的子（灰色剪影，纯氛围，不可点）
+       萌芽 = 陶土（还没上釉）/ 生长 = 黄铜（正在发力）/ 已成 = 墨玉（沉下来）
+     后排 = 未落的子（暗色，纯氛围，不可点）
 
-   棋子造型借鉴 Hartwig 抽象棋组：立方、球座、十字、L 块、
-   拱门、塔、尖顶、宝珠 —— 全部用 Three 原始几何体拼，无外部模型。
+   棋子造型 = 立体的国际象棋棋子（王冠 / 主教 / 骑士 / 城堡 /
+   兵 / 后冠 / 车），全部旋转体（Lathe）+ 原始几何体拼出，
+   做工讲究「有实体感」：底座圆盘、束腰、细颈、顶部有可辨认的形。
+   无外部模型。
 
-   交互：拖动旋转 / 滚轮缩放 / 悬停棋子抬起+金光 / 点击进想法页。
+   交互：拖动旋转 / 滚轮缩放 / 悬停棋子抬起+光圈 / 点击进想法页。
    数据来自 ideas-data.js（window.IDEAS），加想法 = 加数据，棋子自动上盘。
    WebGL 不可用时：卡片列表留在原地当降级，什么都不缺。
    ============================================================ */
@@ -41,12 +43,13 @@
 
   var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 400);
 
-  /* ---------- 灯光：月光当唯一主光源，霓虹只做微弱补色 ----------
-     davesocozy 那种桌面感靠「一段柔和的顶光 + 大面积暗」，
-     所以这里的整体亮度压得很低，盘面主要靠自身的漫反射读出来。 */
-  scene.add(new THREE.AmbientLight(0x2a3550, 0.38));
+  /* ---------- 灯光：月光当主光源，霓虹只做极弱补色 ----------
+     上一版整盘发粉紫的教训：紫红边框面积大 + 环境光偏高，
+     冷环境光会把暖紫毡整体抬成粉。所以这里
+     ① 环境光再降 ② 环境光改中性偏暖（不要蓝紫） ③ 边框与盘面同色系。 */
+  scene.add(new THREE.AmbientLight(0x50565e, 0.34));
 
-  var key = new THREE.DirectionalLight(0xdfe9ff, 0.62);   /* 月光：冷白，偏柔 */
+  var key = new THREE.DirectionalLight(0xdfe9ff, 0.70);   /* 月光：冷白，偏柔 */
   key.position.set(-16, 34, 18);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -57,34 +60,34 @@
   key.shadow.bias = -0.0006;
   scene.add(key);
 
-  /* 极微弱的品红轮廓光：只在物件边缘勾一条线，不能把盘面打亮 */
-  var rim = new THREE.DirectionalLight(0xff7ad9, 0.16);
+  /* 品红轮廓光：只勾物件边缘，够不到盘面 */
+  var rim = new THREE.DirectionalLight(0xff7ad9, 0.14);
   rim.position.set(18, 10, -20);
   scene.add(rim);
 
-  /* 极微弱的青色侧光：让暗部不至于死黑 */
-  var fill = new THREE.DirectionalLight(0x35c8ff, 0.12);
+  /* 青色侧光：防止暗部死黑，量很小 */
+  var fill = new THREE.DirectionalLight(0x8fd8ff, 0.10);
   fill.position.set(14, 8, 22);
   scene.add(fill);
 
   /* ============================================================
-     棋盘：两张毛毡 —— 深绿毡 + 紫红毡，细格线缝在上面
+     棋盘：整块深墨绿毡 —— 盘面、格、边框同色系
      ------------------------------------------------------------
-     参考 davesocozy 的桌面：有色的毡面、细格线、四周被光自然压暗、
-     物件落在上面有软影。所以这里不用光板，用「低饱和毡色 + 粗糙度 0.95」，
-     靠环境光与月光读出质感，格子对比压得很轻，只留缝线的暗示。
+     上一版用「墨绿毡 + 紫红边」，两边都亮，撞色撞出一片粉紫。
+     现在整块统一成深墨绿，只靠明度差分出格与边：
+       深格 < 浅格 < 边框亮边，全是同一个绿的深浅。
      ============================================================ */
 
   var SQ = 4;                       /* 格子边长 */
   var board = new THREE.Group();
   scene.add(board);
 
-  /* 8×8 合并网格 + 顶点色：两种毡色交替，色差很小（缝线的暗示） */
+  /* 8×8 合并网格 + 顶点色：同色系的深浅两档，色差很小 */
   (function buildSquares() {
     var pos = [], col = [], idx = [];
-    /* 毡的毛面不吃高光，所以颜色要直接给足，不要指望光照提亮 */
-    var dk = [0.115, 0.190, 0.150];   /* 深墨绿毡 */
-    var lt = [0.175, 0.270, 0.215];   /* 浅墨绿毡（微微亮一点点） */
+    /* 毡的毛面不吃高光，颜色要直接给足，不要指望光照提亮 */
+    var dk = [0.070, 0.135, 0.105];   /* 深墨绿毡 */
+    var lt = [0.105, 0.190, 0.150];   /* 浅墨绿毡（微微亮一点点） */
     for (var f = 0; f < 8; f++) {
       for (var r = 0; r < 8; r++) {
         var x0 = (f - 4) * SQ, x1 = x0 + SQ;
@@ -110,28 +113,25 @@
   })();
 
   /* 格线：细、暗、几乎贴着毡面（缝线，不是发光网格） */
-  var grid = new THREE.GridHelper(SQ * 8, 8, 0x9fd8ff, 0x9fd8ff);
+  var grid = new THREE.GridHelper(SQ * 8, 8, 0xbfe6d4, 0xbfe6d4);
   grid.position.y = 0.028;
   grid.material.transparent = true;
-  grid.material.opacity = 0.16;
+  grid.material.opacity = 0.13;
   board.add(grid);
 
-  /* 边框：紫红毡垫在下面露出一圈，像桌垫的边 */
+  /* 边框：同色系的深墨绿木缘，只在最外侧压一圈 */
   var frame = new THREE.Mesh(
     new THREE.BoxGeometry(SQ * 8 + 2.6, 1.1, SQ * 8 + 2.6),
-    new THREE.MeshStandardMaterial({ color: 0x4a1f3a, roughness: 0.95, metalness: 0.0 })
+    new THREE.MeshStandardMaterial({ color: 0x1c3428, roughness: 0.92, metalness: 0.0 })
   );
   frame.position.y = -0.56;
   frame.receiveShadow = true;
   board.add(frame);
 
-  /* 边框上沿：一条极暗的缝线，勾出桌垫轮廓 */
+  /* 边框上沿：一条同为墨绿的窄亮边，勾出棋盘轮廓 */
   var edge = new THREE.Mesh(
     new THREE.BoxGeometry(SQ * 8 + 0.6, 0.08, SQ * 8 + 0.6),
-    new THREE.MeshStandardMaterial({
-      color: 0x6b2c52, roughness: 0.9, metalness: 0.0,
-      emissive: 0x3a1029, emissiveIntensity: 0.35
-    })
+    new THREE.MeshStandardMaterial({ color: 0x2e5340, roughness: 0.85, metalness: 0.05 })
   );
   edge.position.y = 0.02;
   board.add(edge);
@@ -266,47 +266,226 @@
     return m;
   }
 
-  var PIECES = [
-    function cube(mat)   { var g = new THREE.Group(); g.add(box(2.4, 2.4, 2.4, 0, 1.2, 0, mat)); return g; },
-    function ballBox(mat){ var g = new THREE.Group(); g.add(box(2.2, 1.2, 2.2, 0, 0.6, 0, mat));
-                           var s = new THREE.Mesh(new THREE.SphereGeometry(1.15, 20, 16), mat);
-                           s.position.y = 2.15; s.castShadow = true; g.add(s); return g; },
-    function cross(mat)  { var g = new THREE.Group(); g.add(box(0.8, 3.6, 0.8, 0, 1.8, 0, mat));
-                           g.add(box(2.4, 0.8, 0.8, 0, 2.9, 0, mat)); return g; },
-    function lblock(mat) { var g = new THREE.Group(); g.add(box(2.6, 1.2, 1.3, 0, 0.6, 0, mat));
-                           g.add(box(1.3, 3.0, 1.3, -0.65, 1.5, 0, mat)); return g; },
-    function arch(mat)   { var g = new THREE.Group(); g.add(box(0.9, 2.2, 1.4, -0.75, 1.1, 0, mat));
-                           g.add(box(0.9, 2.2, 1.4, 0.75, 1.1, 0, mat));
-                           g.add(box(2.4, 0.9, 1.4, 0, 2.65, 0, mat)); return g; },
-    function tower(mat)  { var g = new THREE.Group(); g.add(box(2.4, 0.5, 2.4, 0, 0.25, 0, mat));
-                           var t = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.25, 3.4, 14), mat);
-                           t.position.y = 2.2; t.castShadow = true; g.add(t); return g; },
-    function spire(mat)  { var g = new THREE.Group(); g.add(box(2.0, 0.9, 2.0, 0, 0.45, 0, mat));
-                           var c = new THREE.Mesh(new THREE.ConeGeometry(1.25, 2.8, 14), mat);
-                           c.position.y = 2.3; c.castShadow = true; g.add(c); return g; },
-    function orb(mat)    { var g = new THREE.Group();
-                           var t = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.95, 2.4, 12), mat);
-                           t.position.y = 1.2; t.castShadow = true; g.add(t);
-                           var s = new THREE.Mesh(new THREE.SphereGeometry(0.95, 18, 14), mat);
-                           s.position.y = 2.9; s.castShadow = true; g.add(s); return g; }
-  ];
+  /* ============================================================
+     棋子工厂：立体的国际象棋棋子
+     ------------------------------------------------------------
+     每个子都用「底座圆盘 → 束腰 → 细颈 → 顶部特征形」这几段拼，
+     这是真实棋子的比例。旋转体用 LatheGeometry 按轮廓线车出来，
+     顶部的王冠 / 主教尖 / 骑士马头 / 城堡齿用原始几何体补。
+
+     比例基准：最高的王约 3.4，兵约 2.2（真实棋组也是这个高低差）。
+     ============================================================ */
+
+  /* 轮廓线 → 旋转体（车床）：pts = [[半径, 高度], ...] */
+  function lathe(pts, mat, seg) {
+    var v = [];
+    for (var i = 0; i < pts.length; i++) v.push(new THREE.Vector2(pts[i][0], pts[i][1]));
+    var m = new THREE.Mesh(new THREE.LatheGeometry(v, seg || 30), mat);
+    m.castShadow = true;
+    return m;
+  }
+
+  /* 棋子通用的底座轮廓：厚圆盘 + 一圈束腰 + 圆润的柱身 */
+  function pedestal(mat, r) {
+    r = r || 1.0;
+    return lathe([
+      [0.001, 0.00],
+      [r * 0.98, 0.00],
+      [r, 0.13],
+      [r, 0.30],
+      [r * 0.95, 0.40],
+      [r * 0.62, 0.52],       /* 束腰（收进去） */
+      [r * 0.58, 0.70],
+      [r * 0.70, 0.86],
+      [r * 0.68, 1.05],
+      [r * 0.52, 1.20],
+      [r * 0.44, 1.35],       /* 细颈 */
+      [r * 0.58, 1.52]
+    ], mat, 32);
+  }
+
+  function cyl(rt, rb, h, seg, mat, y) {
+    var m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
+    if (y !== undefined) m.position.y = y;
+    m.castShadow = true;
+    return m;
+  }
+
+  function ring(r, tube, mat, y, seg) {
+    var m = new THREE.Mesh(new THREE.TorusGeometry(r, tube, 10, seg || 26), mat);
+    m.rotation.x = Math.PI / 2;
+    if (y !== undefined) m.position.y = y;
+    m.castShadow = true;
+    return m;
+  }
+
+  /* 1 · 兵：最小的子，球头 + 底下两道环 */
+  function pawn(mat) {
+    var g = new THREE.Group();
+    g.add(lathe([
+      [0.001, 0.00], [0.80, 0.00], [0.82, 0.12], [0.80, 0.28],
+      [0.56, 0.42], [0.50, 0.58], [0.62, 0.72], [0.60, 0.88],
+      [0.46, 1.00], [0.40, 1.14]
+    ], mat, 30));
+    g.add(ring(0.44, 0.10, mat, 1.24, 24));
+    var s = new THREE.Mesh(new THREE.SphereGeometry(0.46, 24, 18), mat);
+    s.position.y = 1.62; s.castShadow = true; g.add(s);
+    return g;
+  }
+
+  /* 2 · 城堡（车）：方形塔身 + 城齿 */
+  function rook(mat) {
+    var g = new THREE.Group();
+    g.add(pedestal(mat, 1.0));
+    var body = cyl(0.76, 0.82, 1.13, 8, mat, 2.05);
+    body.rotation.y = Math.PI / 8;              /* 八棱柱转正一个面朝前 */
+    g.add(body);
+    var crown = cyl(1.00, 0.94, 0.22, 8, mat, 2.72);
+    crown.rotation.y = Math.PI / 8;
+    g.add(crown);
+    /* 城齿：八棱柱顶上削出四个缺口 */
+    for (var i = 0; i < 4; i++) {
+      var a = i * Math.PI / 2 + Math.PI / 8;
+      var t = box(0.42, 0.40, 0.42, Math.cos(a) * 0.72, 2.98, Math.sin(a) * 0.72, mat);
+      g.add(t);
+    }
+    return g;
+  }
+
+  /* 3 · 骑士：马头（侧面轮廓 + 鼻梁 + 鬃背） */
+  function knight(mat) {
+    var g = new THREE.Group();
+    g.add(pedestal(mat, 1.0));
+    /* 脖子：从柱身往前上方倾 */
+    var neck = cyl(0.46, 0.70, 1.05, 20, mat, 2.02);
+    neck.rotation.x = -0.30;
+    neck.position.z = 0.16;
+    g.add(neck);
+    /* 头：斜着的长立方体 */
+    var head = box(0.78, 0.56, 1.32, 0, 2.62, 0.44, mat);
+    head.rotation.x = -0.36;
+    g.add(head);
+    /* 口鼻：向前伸出一小段 */
+    var nose = box(0.62, 0.44, 0.52, 0, 2.44, 1.06, mat);
+    nose.rotation.x = -0.22;
+    g.add(nose);
+    /* 鬃背：从头顶往颈后一溜 */
+    var mane = box(0.34, 0.40, 1.30, 0, 2.90, 0.06, mat);
+    mane.rotation.x = -0.34;
+    g.add(mane);
+    /* 耳尖 */
+    var ear = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.36, 10), mat);
+    ear.position.set(0, 3.06, 0.86);
+    ear.rotation.x = -0.2;
+    ear.castShadow = true;
+    g.add(ear);
+    return g;
+  }
+
+  /* 4 · 主教：细高塔 + 主教帽的斜切口 + 顶珠 */
+  function bishop(mat) {
+    var g = new THREE.Group();
+    g.add(pedestal(mat, 1.0));
+    g.add(cyl(0.50, 0.66, 1.10, 24, mat, 2.05));
+    g.add(ring(0.56, 0.09, mat, 2.58, 26));
+    /* 主教帽：上细下粗的旋转体 */
+    g.add(lathe([
+      [0.001, 2.60], [0.30, 2.62], [0.52, 2.78],
+      [0.54, 3.00], [0.40, 3.26], [0.20, 3.50], [0.001, 3.58]
+    ], mat, 26));
+    /* 帽上的斜切口：一小块斜放的薄板当"缝" */
+    var slit = box(0.10, 0.42, 0.30, 0, 3.05, 0.44, mat);
+    slit.rotation.x = -0.5;
+    g.add(slit);
+    var top = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), mat);
+    top.position.y = 3.70; top.castShadow = true; g.add(top);
+    return g;
+  }
+
+  /* 5 · 后：高冠，顶上一圈小珠 */
+  function queen(mat) {
+    var g = new THREE.Group();
+    g.add(pedestal(mat, 1.06));
+    g.add(cyl(0.54, 0.72, 1.22, 26, mat, 2.08));
+    g.add(ring(0.60, 0.10, mat, 2.66, 28));
+    /* 冠：向下收口，顶上带一圈小球 */
+    g.add(lathe([
+      [0.001, 2.70], [0.42, 2.72], [0.62, 2.92],
+      [0.66, 3.16], [0.76, 3.36], [0.72, 3.52], [0.001, 3.58]
+    ], mat, 28));
+    for (var i = 0; i < 8; i++) {
+      var a = i * Math.PI / 4;
+      var b = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), mat);
+      b.position.set(Math.cos(a) * 0.62, 3.60, Math.sin(a) * 0.62);
+      b.castShadow = true;
+      g.add(b);
+    }
+    var orb = new THREE.Mesh(new THREE.SphereGeometry(0.22, 18, 14), mat);
+    orb.position.y = 3.82; orb.castShadow = true; g.add(orb);
+    return g;
+  }
+
+  /* 6 · 王：最高的子，头顶一个十字 */
+  function king(mat) {
+    var g = new THREE.Group();
+    g.add(pedestal(mat, 1.08));
+    g.add(cyl(0.56, 0.76, 1.30, 26, mat, 2.12));
+    g.add(ring(0.62, 0.10, mat, 2.74, 28));
+    g.add(lathe([
+      [0.001, 2.78], [0.46, 2.80], [0.66, 3.00],
+      [0.68, 3.24], [0.62, 3.44], [0.001, 3.52]
+    ], mat, 28));
+    /* 十字：竖杆 + 横杆 */
+    g.add(box(0.20, 0.76, 0.20, 0, 3.86, 0, mat));
+    g.add(box(0.56, 0.20, 0.20, 0, 3.98, 0, mat));
+    return g;
+  }
+
+  /* 7 · 高塔：细长的塔身 + 尖顶，比兵高一截 */
+  function tower(mat) {
+    var g = new THREE.Group();
+    g.add(pedestal(mat, 0.95));
+    g.add(cyl(0.42, 0.56, 1.60, 22, mat, 2.30));
+    g.add(ring(0.48, 0.08, mat, 3.10, 24));
+    var c = new THREE.Mesh(new THREE.ConeGeometry(0.50, 0.94, 22), mat);
+    c.position.y = 3.62; c.castShadow = true; g.add(c);
+    return g;
+  }
+
+  /* 8 · 圆顶子：低调的收尾造型（圆球顶 + 细颈） */
+  function dome(mat) {
+    var g = new THREE.Group();
+    g.add(pedestal(mat, 0.92));
+    g.add(cyl(0.34, 0.46, 0.70, 20, mat, 1.85));
+    var s = new THREE.Mesh(new THREE.SphereGeometry(0.52, 22, 16), mat);
+    s.position.y = 2.52; s.castShadow = true; g.add(s);
+    return g;
+  }
+
+  var PIECES = [king, queen, rook, bishop, knight, pawn, tower, dome];
 
   /* 状态 → 材质（每个棋子独立材质，方便悬停高亮）
-     毡面桌面版：棋子要「坐在」毡上，所以是厚实的哑光质感，
-     不做塑料反光、不做自发光，只靠形状与色相区分状态。 */
+     实体棋子：底座暗、上身亮，靠金属度与粗糙度读出"料"，
+     三种状态是三种材料，不是三种颜色贴纸。 */
   function statusMat(status) {
-    if (status === "done")      /* 已成：墨玉，沉、暗、只留一点润 */
-      return new THREE.MeshStandardMaterial({ color: 0x14161c, roughness: 0.55, metalness: 0.12 });
-    if (status === "growing")   /* 生长：黄铜，暖、厚、微微发亮 */
-      return new THREE.MeshStandardMaterial({ color: 0xb9862e, roughness: 0.48, metalness: 0.45 });
-    /* 萌芽：灰紫陶土，素、哑、刚捏出来还没上釉 */
-    return new THREE.MeshStandardMaterial({ color: 0x6c6a92, roughness: 0.88, metalness: 0.05 });
+    if (status === "done")      /* 已成：墨玉。深，但有油润的高光 */
+      return new THREE.MeshStandardMaterial({
+        color: 0x1b1f27, roughness: 0.34, metalness: 0.30
+      });
+    if (status === "growing")   /* 生长：黄铜。暖、亮、有金属高光 */
+      return new THREE.MeshStandardMaterial({
+        color: 0xc08a33, roughness: 0.32, metalness: 0.72
+      });
+    /* 萌芽：米白陶土。素、哑，刚捏出来还没上釉 */
+    return new THREE.MeshStandardMaterial({
+      color: 0xa8a294, roughness: 0.82, metalness: 0.04
+    });
   }
 
   function ghostMat() {
     return new THREE.MeshStandardMaterial({
-      color: 0x8fb4d8, roughness: 0.9, metalness: 0.0,
-      transparent: true, opacity: 0.14, depthWrite: false
+      color: 0x4a5568, roughness: 0.75, metalness: 0.05,
+      transparent: true, opacity: 0.42
     });
   }
 
@@ -321,11 +500,25 @@
   /* 想法棋子摆位：中路前排，最显眼的位置 */
   var IDEA_SLOTS = [[3, 6], [4, 6], [2, 5], [5, 5], [1, 6], [6, 6], [3, 5], [4, 5]];
 
+  /* 棋子造型按状态分配：已成最重器（王/后），生长用轻快形（骑士/主教），
+     萌芽用小子（兵/圆顶）。挑的时候保证一眼能读出"这份想法多重"。 */
+  var FORM_BY_STATUS = {
+    done:    [0, 1],        /* 王 / 后 */
+    growing: [4, 3],        /* 骑士 / 主教 */
+    seed:    [5, 6, 7]      /* 兵 / 高塔 / 圆顶 */
+  };
+  var formUsed = { done: 0, growing: 0, seed: 0 };
+
   ideas.forEach(function (idea, i) {
     var slot = IDEA_SLOTS[i % IDEA_SLOTS.length];
-    var make = PIECES[(i * 3 + 1) % PIECES.length];
-    var piece = make(statusMat(idea.status));
+    var pool = FORM_BY_STATUS[idea.status] || FORM_BY_STATUS.seed;
+    var pick = pool[formUsed[idea.status === "done" ? "done"
+                 : idea.status === "growing" ? "growing" : "seed"] % pool.length];
+    formUsed[idea.status === "done" ? "done"
+             : idea.status === "growing" ? "growing" : "seed"]++;
+    var piece = PIECES[pick](statusMat(idea.status));
     piece.position.set((slot[0] - 3.5) * SQ, 0, (slot[1] - 3.5) * SQ);
+    piece.rotation.y = (i % 2 ? 1 : -1) * (0.5 + (i % 3) * 0.35);  /* 各自微转，不呆板 */
     piece.userData = {
       idea: idea, baseY: 0, lift: 0,
       ph: Math.random() * Math.PI * 2
@@ -334,14 +527,14 @@
     ideaPieces.push(piece);
   });
 
-  /* 未落的子：对面两排的暗色剪影（毡面版不用荧光线框，
-     改成更暗更哑的"还没上桌的子"，靠轮廓读出形状） */
+  /* 未落的子：对面两排的暗色棋子（形状都有，只是还没上桌） */
   var GHOST_SLOTS = [[0, 0], [2, 0], [4, 0], [6, 0], [7, 0], [1, 1], [3, 1], [5, 1]];
   GHOST_SLOTS.forEach(function (slot, i) {
-    var make = PIECES[(i * 5 + 2) % PIECES.length];
-    var piece = make(ghostMat());
+    var piece = PIECES[(i * 5 + 2) % PIECES.length](ghostMat());
     piece.position.set((slot[0] - 3.5) * SQ, 0, (slot[1] - 3.5) * SQ);
-    piece.position.y = -0.35;          /* 微微沉进毡面：还没拿上来的子 */
+    piece.position.y = -0.06;          /* 微微沉进毡面：还没拿上来的子 */
+    piece.scale.setScalar(0.92);
+    piece.rotation.y = (i % 2 ? 1 : -1) * (0.6 + (i % 3) * 0.4);
     board.add(piece);
   });
 
@@ -358,8 +551,8 @@
      视角：手搓轨道（拖动旋转 / 滚轮缩放 / 空闲自转）
      ============================================================ */
 
-  var target = new THREE.Vector3(0, 1.2, 0);
-  var orbit = { theta: 0.0, phi: 0.62, radius: 38 };
+  var target = new THREE.Vector3(0, 1.4, 0);
+  var orbit = { theta: 0.0, phi: 0.60, radius: 34 };
   var dragging = false, lastX = 0, lastY = 0, idleFor = 99;
 
   function applyCamera() {
@@ -391,7 +584,7 @@
   canvas.addEventListener("pointerleave", function () { pointer.on = false; });
   canvas.addEventListener("wheel", function (e) {
     e.preventDefault();
-    orbit.radius = Math.min(62, Math.max(22, orbit.radius + e.deltaY * 0.03));
+    orbit.radius = Math.min(58, Math.max(18, orbit.radius + e.deltaY * 0.03));
     idleFor = 0;
   }, { passive: false });
 
