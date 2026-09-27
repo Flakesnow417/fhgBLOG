@@ -105,6 +105,32 @@ body.idea-page {
   min-height: 100vh;
   min-height: 100svh;
   overflow: hidden;
+  /* 暗青黑底（JS 未运行时也有氛围；canvas 会盖在其上） */
+  background: radial-gradient(120% 90% at 38% 58%, #101a23 0%, #0a1118 46%, #05080c 100%);
+}
+
+/* 深色版（墨流水境封面）：题字反白、鼠标墨点变月光雾 */
+.idea-scheme-dark .idea-vtitle {
+  color: #ece7da;
+  text-shadow: 0 0 26px rgba(120, 170, 190, .38), 0 2px 20px rgba(0, 0, 0, .55);
+}
+
+.idea-scheme-dark .idea-vsub {
+  color: rgba(198, 212, 218, .80);
+}
+
+.idea-scheme-dark .idea-ink {
+  background: radial-gradient(circle at 40% 40%,
+    rgba(172, 202, 218, .30),
+    rgba(172, 202, 218, .05) 60%,
+    transparent 74%);
+}
+
+.idea-scheme-dark .idea-ink--big {
+  background: radial-gradient(circle at 45% 45%,
+    rgba(196, 220, 234, .42),
+    rgba(196, 220, 234, .16) 46%,
+    transparent 72%);
 }
 
 /* 参考图的「上下黑边」：深墨渐变压住画面上下 */
