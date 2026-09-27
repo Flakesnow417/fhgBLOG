@@ -25,42 +25,75 @@
     </nav>
   </header>
 
-  <main class="idea-main">
-    <div class="idea-pagehead">
-      <h1>想法集</h1>
-      <p class="idea-lead">一盘没下完的棋 —— 每个想法都是棋盘上的一枚子。</p>
-      <hr class="idea-rule">
-    </div>
+  <main class="idea-main idea-main--stage">
 
     <!-- ======== 想法棋局：assets/ideas-board.js · Three.js 3D 棋盘 ========
-         拖动旋转 / 滚轮缩放 / 点棋子看想法。
-         WebGL 不可用时，下方卡片列表自动兜底。 ======== -->
-    <section class="idea-board-wrap">
+         棋盘直接悬浮在页面上：没有卡片、没有边框、没有背板，
+         只有一层落影。拖动旋转 / 滚轮缩放 / 点棋子看想法。
+         WebGL 不可用时，下方卡片列表与标题自动兜底。 ======== -->
+    <section class="idea-board-stage" id="idea-stage">
+      <div class="idea-board-shadow" aria-hidden="true"></div>
       <canvas id="idea-board"></canvas>
-      <div class="idea-board-legend">
-        <b>萌芽</b>·全息　<b>生长</b>·鎏金　<b>已成</b>·黑曜　<b>灰子</b>·全息影
-      </div>
+      <!-- 两处浮层：无底板、无边框，只是浮在棋盘上方的字 -->
       <div class="idea-board-op" aria-hidden="true">拖动旋转 · 滚轮缩放 · 点棋子看想法</div>
+      <div class="idea-board-legend">
+        <b>萌芽</b>·陶土　<b>生长</b>·黄铜　<b>已成</b>·墨玉　<b>灰子</b>·未落
+      </div>
     </section>
 
-    <!-- 卡片列表：无 3D 时的降级（3D 就绪后由 JS 自动隐藏） -->
-    <div class="idea-grid" id="idea-grid">
-      <noscript>
-        <p style="color:var(--mo-light)">需要启用 JavaScript 才能看到想法列表；
-        也可以直接打开 ideas/ 目录里的详情页。</p>
-      </noscript>
-    </div>
-
-    <div class="idea-hint">
-      新增一条想法：打开 <code>assets/ideas-data.js</code>，照着现有条目抄一段、改内容即可，
-      棋盘上的棋子会自动出现。想写长文，就在 <code>ideas/</code> 目录建一个页面，把 <code>href</code> 指过去。
-    </div>
   </main>
+
+  <!-- 舞台下方的内容层：正常文档流，滚过棋盘后出现 -->
+  <div class="idea-afterstage" id="idea-after">
+    <div class="idea-afterstage-inner">
+
+      <div class="idea-pagehead">
+        <h1>想法集</h1>
+        <p class="idea-lead">一盘没下完的棋 —— 每个想法都是棋盘上的一枚子。</p>
+      </div>
+
+      <!-- 卡片列表：无 3D 时的降级（3D 就绪后由 JS 自动隐藏） -->
+      <div class="idea-grid" id="idea-grid">
+        <noscript>
+          <p style="color:var(--mo-light)">需要启用 JavaScript 才能看到想法列表；
+          也可以直接打开 ideas/ 目录里的详情页。</p>
+        </noscript>
+      </div>
+
+      <div class="idea-hint">
+        新增一条想法：打开 <code>assets/ideas-data.js</code>，照着现有条目抄一段、改内容即可，
+        棋盘上的棋子会自动出现。想写长文，就在 <code>ideas/</code> 目录建一个页面，把 <code>href</code> 指过去。
+      </div>
+
+    </div>
+  </div>
 
   <footer class="idea-foot">© 2026 一念未落 · 未成之想，皆可入册</footer>
 
   <script src="assets/vendor/three.min.js"></script>
   <script src="assets/ideas-data.js"></script>
+  <script src="assets/ideas-board.js"></script>
+  <script>
+    /* ---------- 3D 就绪后：把标题也交给棋盘舞台（棋盘独占首屏） ---------- */
+    (function () {
+      var stage = document.getElementById("idea-stage");
+      var after = document.getElementById("idea-after");
+      if (!stage || !after) return;
+
+      function layout() {
+        var ready = document.body.classList.contains("idea-board-3d");
+        if (!ready) return;
+        /* 舞台占满首屏；标题块移到下方内容层 */
+        stage.style.height = Math.round(window.innerHeight) + "px";
+        after.style.marginTop = "0px";
+      }
+
+      /* JS 里不再用 CSS 撑高，改为按视口精确算：不会被裁剪 */
+      window.addEventListener("resize", layout);
+      layout();
+      window.__ideaStageLayout = layout;
+    })();
+  </script>
   <script>
     /* 渲染降级卡片列表：数据 → HTML（3D 就绪后整区隐藏） */
     (function () {
@@ -104,8 +137,10 @@
         box.appendChild(a);
       });
     })();
+
+    /* 卡片渲染完再让棋盘布局（棋盘要按首屏高度定尺寸） */
+    if (window.__ideaStageLayout) window.__ideaStageLayout();
   </script>
-  <script src="assets/ideas-board.js"></script>
   <script src="assets/night.js"></script>
   <script src="assets/ink.js"></script>
 </body>

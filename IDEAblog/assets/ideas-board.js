@@ -22,26 +22,29 @@
 
   var renderer;
   try {
+    /* alpha: true —— 画布本身透明，棋盘才真正"浮"在页面夜色上 */
     renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
   } catch (e) { return; }                     /* 卡片列表兜底 */
 
-  /* 3D 就绪：隐藏卡片降级区 */
+  /* 3D 就绪：隐藏卡片降级区、把棋盘舞台布局切换过来 */
   document.body.classList.add("idea-board-3d");
+  if (window.__ideaStageLayout) window.__ideaStageLayout();
 
   var reduce = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+  renderer.setClearColor(0x000000, 0);        /* 透明底：不要任何背板 */
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputEncoding = THREE.sRGBEncoding;
 
   var scene = new THREE.Scene();
-  /* 深夜蓝黑：远处化进夜色 */
-  scene.background = new THREE.Color(0x070d1f);
-  scene.fog = new THREE.Fog(0x070d1f, 46, 130);
+  /* 不设 scene.background —— 页面自己的天幕透上来 */
+  /* 雾只作用在棋盘本身，用很浅的量让远端的格子化开 */
+  scene.fog = new THREE.Fog(0x0a1420, 52, 145);
 
-  var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 400);
+  var camera = new THREE.PerspectiveCamera(34, 1, 0.1, 400);
 
   /* ---------- 灯光：月光当主光源，霓虹只做极弱补色 ----------
      上一版整盘发粉紫的教训：紫红边框面积大 + 环境光偏高，
@@ -146,12 +149,9 @@
   shadowCatcher.receiveShadow = true;
   scene.add(shadowCatcher);
 
-  /* ============================================================
-     深夜氛围：星野 + 月亮 + 极淡极光 + 光尘 + 桌灯暖光
-     ------------------------------------------------------------
-     参考图的夜景是「深、静、少量暖光」：星光不用密，
-     极光只要一层若有若无的色雾，暖光只有一盏桌灯。
-     ============================================================ */
+  /* 深夜氛围：只留月亮（要遮在棋盘后面，所以浮得很高但离得很远）
+     星野/极光交给页面的 night.js —— 棋盘画布现在是透明的，
+     页面的天幕会从棋盘周围直接透上来，两者自然连成一体。 */
 
   function radialTex(inner, outer, size) {
     var s = size || 128, c = document.createElement("canvas");
@@ -177,70 +177,35 @@
     };
   }
 
-  /* 星野：数量与亮度都收着，像隔着窗看夜 */
-  var starTex = radialTex("rgba(235,245,255,0.95)", "rgba(235,245,255,0)", 64);
-  var starCount = 170;
-  var starGeo = new THREE.BufferGeometry();
-  var starPos = new Float32Array(starCount * 3);
-  var rndS = mulberry(4242);
-  for (var si = 0; si < starCount; si++) {
-    starPos[si * 3]     = (rndS() - 0.5) * 260;
-    starPos[si * 3 + 1] = 6 + rndS() * 90;
-    starPos[si * 3 + 2] = (rndS() - 0.62) * 260;
-  }
-  starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
-  var starMat = new THREE.PointsMaterial({
-    size: 1.4, map: starTex, transparent: true, opacity: 0.5,
-    blending: THREE.AdditiveBlending, depthWrite: false, color: 0xc8dcf6
-  });
-  var stars = new THREE.Points(starGeo, starMat);
-  scene.add(stars);
-
-  /* 月亮 + 月晕（唯一的冷光源，柔） */
+  /* 月亮 + 月晕：唯一的冷光源，柔 */
   var moon = new THREE.Mesh(
     new THREE.PlaneGeometry(9, 9),
     new THREE.MeshBasicMaterial({ map: radialTex("rgba(248,246,232,0.90)", "rgba(248,246,232,0)", 128), transparent: true, depthWrite: false })
   );
-  moon.position.set(42, 44, -98);
+  moon.position.set(44, 46, -96);
   scene.add(moon);
   var moonGlow = new THREE.Mesh(
     new THREE.PlaneGeometry(40, 40),
-    new THREE.MeshBasicMaterial({ map: radialTex("rgba(180,206,244,0.22)", "rgba(180,206,244,0)", 128), transparent: true, depthWrite: false })
+    new THREE.MeshBasicMaterial({ map: radialTex("rgba(180,206,244,0.20)", "rgba(180,206,244,0)", 128), transparent: true, depthWrite: false })
   );
-  moonGlow.position.set(42, 44, -99);
+  moonGlow.position.set(44, 46, -97);
   scene.add(moonGlow);
 
-  /* 极淡的极光：两层很宽很浅的色雾，只给夜空一点层次 */
-  var auroraC = new THREE.Mesh(
-    new THREE.PlaneGeometry(140, 44),
-    new THREE.MeshBasicMaterial({ map: radialTex("rgba(40,140,180,0.16)", "rgba(40,140,180,0)", 128), transparent: true, depthWrite: false })
-  );
-  auroraC.position.set(-50, 42, -108);
-  auroraC.rotation.z = 0.24;
-  scene.add(auroraC);
-  var auroraM = new THREE.Mesh(
-    new THREE.PlaneGeometry(150, 48),
-    new THREE.MeshBasicMaterial({ map: radialTex("rgba(150,70,140,0.12)", "rgba(150,70,140,0)", 128), transparent: true, depthWrite: false })
-  );
-  auroraM.position.set(34, 56, -118);
-  auroraM.rotation.z = -0.2;
-  scene.add(auroraM);
-
   /* 桌灯暖光：盘面左侧一小片暖黄，让毡面有被灯照到的一角 */
-  var lamp = new THREE.PointLight(0xffc98a, 0.85, 46);
+  var lamp = new THREE.PointLight(0xffc98a, 0.80, 46);
   lamp.position.set(-18, 13, 16);
   scene.add(lamp);
   var lampHalo = new THREE.Mesh(
     new THREE.PlaneGeometry(46, 46),
-    new THREE.MeshBasicMaterial({ map: radialTex("rgba(255,196,128,0.13)", "rgba(255,196,128,0)", 128), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
+    new THREE.MeshBasicMaterial({ map: radialTex("rgba(255,196,128,0.11)", "rgba(255,196,128,0)", 128), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
   );
   lampHalo.position.set(-18, 4.6, 16);
   lampHalo.rotation.x = -Math.PI / 2;
   scene.add(lampHalo);
 
-  /* 盘面上浮动的光尘：少而缓，像灯下的浮屑 */
+  /* 盘面上空极少的浮尘：不用 sprite，用很小的方块，省事也够看 */
   var dustGeo = new THREE.BufferGeometry();
-  var dustCount = 60;
+  var dustCount = 46;
   var dustPos = new Float32Array(dustCount * 3);
   var rndD = mulberry(1313);
   for (var di = 0; di < dustCount; di++) {
@@ -250,7 +215,7 @@
   }
   dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
   var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
-    size: 0.42, map: starTex, transparent: true, opacity: 0.3,
+    size: 0.30, transparent: true, opacity: 0.34,
     blending: THREE.AdditiveBlending, depthWrite: false, color: 0xffd9a8
   }));
   scene.add(dust);
@@ -548,21 +513,36 @@
   board.add(hoverRing);
 
   /* ============================================================
-     视角：手搓轨道（拖动旋转 / 滚轮缩放 / 空闲自转）
+     视角：棋盘「悬浮」的关键 —— 一个承载倾斜的舞台组
+     ------------------------------------------------------------
+     相机固定不动，棋盘整组绕自身中心做「轻微俯视 + 轻微侧转」，
+     所以画面上盘面有明显的透视收缩与倾角，像悬在页面前方。
+     拖动只改这组的 yaw/pitch（顺手反馈强），滚轮改相机距离。
      ============================================================ */
 
-  var target = new THREE.Vector3(0, 1.4, 0);
-  var orbit = { theta: 0.0, phi: 0.60, radius: 34 };
+  var rig = new THREE.Group();
+  var BOARD_CENTER = new THREE.Vector3(0, 0.6, 0);
+  rig.position.copy(BOARD_CENTER);
+  scene.add(rig);
+  rig.add(board);
+  board.position.set(-BOARD_CENTER.x, -BOARD_CENTER.y, -BOARD_CENTER.z);
+
+  var shadowSync = function () {
+    rig.updateMatrixWorld(true);
+  };
+
+  /* 初始倾角：大概 30° 俯视 + 一点点侧转，透视感就出来了 */
+  var tilt = { yaw: -0.30, pitch: 0.50 };
   var dragging = false, lastX = 0, lastY = 0, idleFor = 99;
 
-  function applyCamera() {
-    var cp = Math.cos(orbit.phi), sp = Math.sin(orbit.phi);
-    camera.position.set(
-      target.x + orbit.radius * cp * Math.sin(orbit.theta),
-      target.y + orbit.radius * sp,
-      target.z + orbit.radius * cp * Math.cos(orbit.theta)
-    );
-    camera.lookAt(target);
+  /* 相机：正对着舞台，微微俯视 */
+  var camDist = 26;
+  camera.position.set(0, 3.4, camDist);
+  camera.lookAt(0, 0.6, 0);
+
+  function applyTilt() {
+    rig.rotation.set(tilt.pitch, tilt.yaw, 0);
+    shadowSync();
   }
 
   canvas.addEventListener("pointerdown", function (e) {
@@ -571,8 +551,8 @@
   });
   canvas.addEventListener("pointermove", function (e) {
     if (dragging) {
-      orbit.theta -= (e.clientX - lastX) * 0.0052;
-      orbit.phi = Math.min(1.25, Math.max(0.30, orbit.phi - (e.clientY - lastY) * 0.004));
+      tilt.yaw += (e.clientX - lastX) * 0.0062;
+      tilt.pitch = Math.min(1.05, Math.max(0.06, tilt.pitch + (e.clientY - lastY) * 0.0042));
       lastX = e.clientX; lastY = e.clientY; idleFor = 0;
     }
     pointer.x = (e.clientX / canvas.clientWidth) * 2 - 1;
@@ -584,7 +564,8 @@
   canvas.addEventListener("pointerleave", function () { pointer.on = false; });
   canvas.addEventListener("wheel", function (e) {
     e.preventDefault();
-    orbit.radius = Math.min(58, Math.max(18, orbit.radius + e.deltaY * 0.03));
+    camDist = Math.min(40, Math.max(16, camDist + e.deltaY * 0.02));
+    camera.position.z = camDist;
     idleFor = 0;
   }, { passive: false });
 
@@ -615,16 +596,40 @@
      主循环
      ============================================================ */
 
+  var B = SQ * 4;                   /* 棋盘半宽（含边框约 ×1.16） */
+
+  /* 自适应取景：按画布宽高算出「让整盘刚好装进来」的距离 ——
+     倾斜后棋盘在屏幕上的投影会变宽变高，所以留了余量，
+     并给移动端单独放宽。这样任何尺寸都不会被裁掉边角。 */
+  function fitToCanvas(w, h) {
+    var aspect = w / h;
+    var halfW = B * 1.55;                      /* 倾斜后横向占宽的上界 */
+    var halfH = B * 1.30;                      /* 纵向占高（含棋子高度） */
+    var fovY = camera.fov * Math.PI / 180;
+    var fitH = halfH / Math.tan(fovY / 2);
+    var fitW = halfW / (Math.tan(fovY / 2) * aspect);
+    var need = Math.max(fitH, fitW) * 1.10;    /* 10% 呼吸余量 */
+    camDist = Math.max(need, 17);
+    camera.position.z = camDist;
+    camera.lookAt(0, 0.6, 0);
+  }
+
   function resize() {
-    var w = canvas.clientWidth || canvas.parentElement.clientWidth;
-    var h = canvas.clientHeight || canvas.parentElement.clientHeight;
+    var stage = canvas.parentElement;
+    var w = (stage && stage.clientWidth) || window.innerWidth;
+    var h = (stage && stage.clientHeight) || Math.round(window.innerHeight * 0.72);
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    fitToCanvas(w, h);
+    applyTilt();
   }
   window.addEventListener("resize", resize);
   resize();
+  /* 舞台高度由页面脚本按视口算，算完可能晚一拍：补一次 */
+  setTimeout(resize, 120);
+  setTimeout(resize, 600);
 
   var clock = new THREE.Clock();
   var uTime = 0;
@@ -634,17 +639,16 @@
     var ts = reduce ? 0 : 1;
     uTime += dt * ts;
 
-    /* 空闲自转（游戏感），交互后 4 秒恢复 */
+    /* 空闲时棋盘自己很慢地转（悬着的呼吸感），交互后 4 秒恢复 */
     idleFor += dt;
-    if (idleFor > 4 && !dragging) orbit.theta += dt * 0.05 * ts;
-    applyCamera();
+    if (idleFor > 4 && !dragging) {
+      tilt.yaw += dt * 0.055 * ts;
+      applyTilt();
+    }
 
-    /* 深夜氛围动画：星星很轻地眨眼、月与极光面向镜头、光尘缓旋 */
-    starMat.opacity = 0.40 + 0.12 * Math.sin(uTime * 1.1) * ts;
+    /* 月与光晕面向镜头、浮尘缓旋 */
     moon.lookAt(camera.position);
     moonGlow.lookAt(camera.position);
-    auroraC.lookAt(camera.position);
-    auroraM.lookAt(camera.position);
     dust.rotation.y += dt * 0.022 * ts;
 
     /* 悬停检测 */

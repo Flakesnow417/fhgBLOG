@@ -688,70 +688,11 @@ body.idea-page {
 
 /* ============================================================
    想法棋局（ideas.html 3D 棋盘）
+   ------------------------------------------------------------
+   底色类 .idea-board-* 的完整定义在文件末尾的「夜场沉浸版」里，
+   这里只留与主题无关的公共部分。旧版 .idea-board-wrap 容器
+   （边框 / 圆角 / 背板 / 扫描线）已整体移除 —— 棋盘现在完全悬浮。
    ============================================================ */
-
-.idea-board-wrap {
-  position: relative;
-  height: min(72vh, 700px);
-  margin-bottom: 36px;
-  /* 千禧深夜：天鹅绒蓝黑 + 霓虹描边 + 扫描线 */
-  border: 1px solid rgba(46, 230, 255, .30);
-  border-radius: 6px;
-  overflow: hidden;
-  background: linear-gradient(180deg, #0a1230 0%, #070d1f 52%, #04060e 100%);
-  box-shadow: 0 0 0 1px rgba(46, 230, 255, .06),
-              0 18px 50px -24px rgba(10, 20, 60, .8);
-  cursor: grab;
-}
-
-/* CRT 扫描线：千禧年显示器的味道 */
-.idea-board-wrap::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg,
-    rgba(255, 255, 255, .028) 0 1px,
-    transparent 1px 3px);
-}
-
-.idea-board-wrap canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-/* 图例：棋子材质 = 想法状态（霓虹字） */
-.idea-board-legend {
-  position: absolute;
-  left: 14px;
-  bottom: 12px;
-  padding: 6px 12px;
-  background: rgba(7, 13, 31, .72);
-  border: 1px solid rgba(111, 216, 255, .30);
-  border-radius: 3px;
-  color: rgba(158, 196, 220, .85);
-  font-size: 12px;
-  letter-spacing: .12em;
-  pointer-events: none;
-}
-
-.idea-board-legend b {
-  font-weight: 600;
-  color: #8fe9ff;
-  text-shadow: 0 0 8px rgba(46, 230, 255, .55);
-}
-
-/* 右上角操作提示 */
-.idea-board-op {
-  position: absolute;
-  right: 14px;
-  top: 12px;
-  color: rgba(111, 216, 255, .55);
-  font-size: 12px;
-  letter-spacing: .2em;
-  pointer-events: none;
-}
 
 /* 3D 就绪后，卡片降级区隐藏 */
 body.idea-board-3d .idea-grid { display: none; }
@@ -761,11 +702,6 @@ body.idea-board-3d .idea-grid { display: none; }
   background: rgba(7, 13, 31, .92);
   border-color: rgba(111, 216, 255, .45);
   color: #d9ecff;
-}
-
-@media (max-width: 640px) {
-  .idea-board-wrap { height: 56vh; }
-  .idea-board-op { display: none; }
 }
 
 /* ---------- 墨迹交互（ink.js 生成） ---------- */
@@ -975,33 +911,76 @@ body.idea-page.night-bg {
   background: linear-gradient(0deg, rgba(4, 6, 15, .82), rgba(4, 6, 15, 0));
 }
 
-/* ---------- 棋盘：毡面桌垫，与天幕连成一体 ----------
-   参考 davesocozy 的桌面：不要方框、不要发光板，
-   只留一圈极暗的紫红毡边 + 一点点暖光，让棋盘像"放在夜里的桌垫"。 */
+/* ---------- 棋盘：完全悬浮在页面上（无容器、无背板、无边框） ----------
+   棋盘本身就是页面：舞台只负责占位与接收指针，绝不画任何轮廓。
+   唯一的装饰 = 底下一层柔和投影，营造"悬在页面前方"的观感。 */
 
-.idea-page.night-bg .idea-board-wrap {
-  height: min(76vh, 760px);
-  border: 1px solid rgba(88, 138, 112, .30);
-  border-radius: 3px;
-  background: transparent;         /* Canvas 里的星野直接透到页面上 */
-  box-shadow:
-    0 0 0 1px rgba(88, 138, 112, .05),
-    0 30px 80px -40px rgba(0, 0, 0, .95),
-    0 0 90px -34px rgba(60, 120, 90, .30);
+.idea-page.night-bg .idea-board-stage {
+  position: relative;
+  width: 100%;
+  max-width: none;                 /* 打满整宽，不再被正文宽度框住 */
+  height: 100vh;
+  height: 100svh;                  /* JS 就绪后按视口精确写高 */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;               /* 倾角大了也不裁 */
+  cursor: grab;
+  /* 下面这一层是「悬浮感」的核心：贴着盘底的柔和投影 */
+  filter: drop-shadow(0 42px 46px rgba(0, 0, 0, .58))
+          drop-shadow(0 12px 22px rgba(0, 0, 0, .40));
 }
 
-/* 扫描线几乎收干净：毡面不要 CRT 味 */
-.idea-page.night-bg .idea-board-wrap::after {
-  background: repeating-linear-gradient(0deg,
-    rgba(255, 255, 255, .012) 0 1px,
-    transparent 1px 5px);
+.idea-page.night-bg .idea-board-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: none;                /* 透明：页面天幕从棋盘周围透上来 */
+}
+
+/* 再补一层椭圆软影，落在盘底正下方 —— 投影更有"离地"的分量 */
+.idea-page.night-bg .idea-board-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  width: 62%;
+  height: 12%;
+  transform: translateX(-50%);
+  background: radial-gradient(50% 50% at 50% 50%,
+    rgba(0, 0, 0, .52), rgba(0, 0, 0, .24) 46%, rgba(0, 0, 0, 0) 76%);
+  filter: blur(14px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 棋盘上的两处浮层：贴在舞台底部，不做任何底板 */
+.idea-page.night-bg .idea-board-op {
+  position: absolute;
+  right: clamp(16px, 4vw, 52px);
+  bottom: 26px;
+  z-index: 2;
+  color: rgba(178, 196, 184, .42);
+  font-size: 12px;
+  letter-spacing: .22em;
+  pointer-events: none;
 }
 
 .idea-page.night-bg .idea-board-legend {
-  background: rgba(8, 12, 12, .62);
-  border-color: rgba(88, 138, 112, .40);
-  color: rgba(196, 208, 198, .88);
-  backdrop-filter: blur(4px);
+  position: absolute;
+  left: clamp(16px, 4vw, 52px);
+  bottom: 24px;
+  z-index: 2;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  color: rgba(196, 208, 198, .80);
+  font-size: 12px;
+  letter-spacing: .14em;
+  pointer-events: none;
 }
 
 .idea-page.night-bg .idea-board-legend b {
@@ -1009,8 +988,15 @@ body.idea-page.night-bg {
   text-shadow: 0 0 10px rgba(232, 201, 138, .35);
 }
 
-.idea-page.night-bg .idea-board-op {
-  color: rgba(178, 196, 184, .44);
+/* 舞台下方的内容层：棋盘独占首屏，内容在它之后滚上来 */
+.idea-page.night-bg .idea-afterstage-inner {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: clamp(40px, 9vh, 96px) 22px 90px;
+}
+
+.idea-page.night-bg .idea-pagehead {
+  text-align: center;
 }
 
 /* ---------- 想法卡片（3D 降级时出现 · 夜版玻璃卡） ---------- */
@@ -1128,6 +1114,14 @@ body.idea-page.night-bg {
 }
 
 @media (max-width: 640px) {
-  .idea-page.night-bg .idea-board-wrap { height: 58vh; }
+  .idea-page.night-bg .idea-board-stage { height: 72vh; height: 72svh; }
+  .idea-page.night-bg .idea-board-shadow { width: 74%; bottom: 16%; }
+  .idea-page.night-bg .idea-board-op { display: none; }
   .idea-page.night-bg .idea-art { padding: 22px 18px 26px; }
+  .idea-page.night-bg .idea-afterstage-inner { padding: 28px 18px 60px; }
 }
+
+/* 首屏棋盘舞台：3D 就绪后，标题区在舞台下方（避免和棋盘抢首屏） */
+.idea-page.night-bg .idea-main--stage { padding: 0; max-width: none; }
+body:not(.idea-board-3d) .idea-page.night-bg .idea-board-stage { height: auto; }
+body:not(.idea-board-3d) .idea-board-shadow { display: none; }
