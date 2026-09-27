@@ -60,12 +60,11 @@
   <!-- 滚动轨道：提供下潜的滚动空间（约 3.4 屏） -->
   <div class="idea-track" aria-hidden="true"></div>
 
-  <script type="importmap">
-    { "imports": { "three": "./assets/vendor/three.module.js" } }
-  </script>
-  <script type="module" src="assets/ink-world.js"></script>
+  <!-- Three.js UMD 传统脚本版：双击 file:// 打开也能跑 -->
+  <script src="assets/vendor/three.min.js"></script>
+  <script src="assets/ink-world.js"></script>
   <script>
-    /* 看门狗：5 秒后 3D 还没就绪（老浏览器/无 WebGL/模块加载失败）→ 静态降级 */
+    /* 看门狗：5 秒后 3D 还没就绪（老浏览器/无 WebGL/脚本加载失败）→ 静态降级 */
     window.addEventListener("load", function () {
       setTimeout(function () {
         if (!window.IDEA_GL_READY) document.body.classList.add("idea-no-webgl");

@@ -11,10 +11,17 @@
                billboard 永远朝向你的视线，射线拾取点击跳页。
 
    ★ 你以后只改 TAGS：加一条 = 多一枚空间里的可点标签字。
+   注：使用 UMD 传统脚本版 three.min.js（全局 THREE），
+       双击 file:// 打开也能跑，不挑协议。
    ============================================================ */
-import * as THREE from "three";
 
 (function () {
+  /* three.min.js 没加载成功（比如文件丢失）→ 直接降级 */
+  if (typeof THREE === "undefined") {
+    document.body.classList.add("idea-no-webgl");
+    return;
+  }
+
   var canvas = document.getElementById("idea-gl");
   if (!canvas) return;
 
@@ -33,6 +40,7 @@ import * as THREE from "three";
   var mobile = window.innerWidth < 720;
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.4 : 1.6));
+  renderer.outputEncoding = THREE.sRGBEncoding;
 
   var scene = new THREE.Scene();
   scene.background = new THREE.Color(0x070c12);
@@ -171,7 +179,7 @@ import * as THREE from "three";
     g.fillStyle = grad;
     g.fillRect(0, 0, s, s);
     var tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.encoding = THREE.sRGBEncoding;
     return tex;
   }
 
@@ -235,7 +243,7 @@ import * as THREE from "three";
       g.fillRect(m - 16, ey - 16, 32, 32);
     });
     var tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.encoding = THREE.sRGBEncoding;
     return tex;
   }
 
@@ -333,7 +341,7 @@ import * as THREE from "three";
       g.strokeText(ch, s / 2, s / 2);
     }
     var tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.encoding = THREE.sRGBEncoding;
     tex.anisotropy = 4;
     return tex;
   }
