@@ -43,8 +43,8 @@
   renderer.outputEncoding = THREE.sRGBEncoding;
 
   var scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x070c12);
-  scene.fog = new THREE.FogExp2(0x0a141c, 0.013);
+  scene.background = new THREE.Color(0x0d1822);
+  scene.fog = new THREE.FogExp2(0x13222e, 0.011);
 
   var camera = new THREE.PerspectiveCamera(58, 1, 0.1, 1200);
 
@@ -72,8 +72,8 @@
 
   var waterUniforms = {
     uTime: { value: 0 },
-    uFogColor: { value: new THREE.Color(0x0a141c) },
-    uFogDensity: { value: 0.013 }
+    uFogColor: { value: new THREE.Color(0x13222e) },
+    uFogDensity: { value: 0.011 }
   };
 
   var waterMat = new THREE.ShaderMaterial({
@@ -82,6 +82,8 @@
       "uniform float uTime;",
       "varying float vElev;",
       "varying float vViewZ;",
+      "varying float vWX;",
+      "varying float vWY;",
       "float wave(vec2 p, float t){",
       "  return sin(p.x*0.055 + t*0.9)*1.1",
       "       + sin(p.y*0.042 + t*0.65)*1.5",
@@ -93,6 +95,8 @@
       "  float e = wave(pos.xy, uTime);",
       "  pos.z += e;",
       "  vElev = e;",
+      "  vWX = pos.x;",
+      "  vWY = pos.y;",
       "  vec4 mv = modelViewMatrix * vec4(pos, 1.0);",
       "  vViewZ = -mv.z;",
       "  gl_Position = projectionMatrix * mv;",
@@ -101,14 +105,21 @@
     fragmentShader: [
       "uniform vec3 uFogColor;",
       "uniform float uFogDensity;",
+      "uniform float uTime;",
       "varying float vElev;",
       "varying float vViewZ;",
+      "varying float vWX;",
+      "varying float vWY;",
       "void main(){",
-      "  vec3 deep = vec3(0.012, 0.022, 0.032);",
-      "  vec3 mid  = vec3(0.048, 0.078, 0.098);",
+      "  vec3 deep = vec3(0.030, 0.055, 0.075);",
+      "  vec3 mid  = vec3(0.100, 0.150, 0.185);",
       "  vec3 col = mix(deep, mid, smoothstep(-2.6, 2.6, vElev));",
-      "  float crest = smoothstep(2.0, 2.9, vElev);",
-      "  col += vec3(0.30, 0.44, 0.52) * crest * 0.55;",
+      "  float crest = smoothstep(1.8, 2.8, vElev);",
+      "  col += vec3(0.38, 0.52, 0.60) * crest * 0.65;",
+      /* 月光湖道：月亮在水面拖出的反光光路（水墨湖泊的灵魂） */
+      "  float band = exp(-pow((vWX - 24.0) / 26.0, 2.0));",
+      "  float shimmer = 0.55 + 0.45 * sin(vWY * 0.55 + uTime * 1.6) * sin(vWX * 0.35 - uTime * 0.9);",
+      "  col += vec3(0.52, 0.62, 0.66) * band * shimmer * 0.30;",
       "  float f = 1.0 - exp(-uFogDensity*uFogDensity*vViewZ*vViewZ);",
       "  col = mix(col, uFogColor, clamp(f, 0.0, 1.0));",
       "  gl_FragColor = vec4(col, 1.0);",
@@ -138,9 +149,9 @@
         + 0.18 * Math.sin(t * 6.283 * 4.7 + p2)
         + 0.10 * Math.sin(t * 6.283 * 9.3 + p3));
       pos.push(x, -14, 0, x, y, 0);
-      /* 山脚近黑，山脊按 toneK 提亮（远山更淡更冷） */
-      col.push(0.018, 0.028, 0.042,
-               0.075 * toneK, 0.105 * toneK, 0.128 * toneK);
+      /* 山脚青灰，山脊按 toneK 提亮（远山更淡更冷） */
+      col.push(0.030, 0.046, 0.062,
+               0.105 * toneK, 0.140 * toneK, 0.168 * toneK);
       if (i < segs) {
         var a = i * 2;
         idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
@@ -183,11 +194,13 @@
     return tex;
   }
 
+  /* 高空雾团 + 贴水面的湖雾（水墨湖泊的平远雾气） */
   var mistTex = radialTex("rgba(158,190,205,0.55)", "rgba(158,190,205,0)");
   var mists = [];
-  [[-30, 12, -55, 150, 40], [40, 18, -95, 190, 50], [-50, 22, -150, 240, 60]].forEach(function (m) {
+  [[-30, 12, -55, 150, 40], [40, 18, -95, 190, 50], [-50, 22, -150, 240, 60],
+   [15, 5, -40, 130, 22], [-25, 6, -75, 160, 26]].forEach(function (m) {
     var mat = new THREE.MeshBasicMaterial({
-      map: mistTex, transparent: true, opacity: 0.16, depthWrite: false
+      map: mistTex, transparent: true, opacity: 0.22, depthWrite: false
     });
     var mesh = new THREE.Mesh(new THREE.PlaneGeometry(m[3], m[4]), mat);
     mesh.position.set(m[0], m[1], m[2]);
@@ -207,10 +220,27 @@
   }
   pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
   var particles = new THREE.Points(pGeo, new THREE.PointsMaterial({
-    size: 1.5, map: dotTex, transparent: true, opacity: 0.5,
+    size: 1.5, map: dotTex, transparent: true, opacity: 0.6,
     blending: THREE.AdditiveBlending, depthWrite: false, color: 0x9ec6d6
   }));
   scene.add(particles);
+
+  /* ---------- 湖上月：月轮 + 月晕（月光湖道的源头） ---------- */
+
+  var moonTex = radialTex("rgba(252,248,228,0.95)", "rgba(252,248,228,0)");
+  var moonGlowTex = radialTex("rgba(214,228,236,0.34)", "rgba(214,228,236,0)");
+  var moon = new THREE.Mesh(
+    new THREE.PlaneGeometry(13, 13),
+    new THREE.MeshBasicMaterial({ map: moonTex, transparent: true, depthWrite: false })
+  );
+  moon.position.set(24, 62, -180);
+  scene.add(moon);
+  var moonGlow = new THREE.Mesh(
+    new THREE.PlaneGeometry(60, 60),
+    new THREE.MeshBasicMaterial({ map: moonGlowTex, transparent: true, depthWrite: false, opacity: 0.85 })
+  );
+  moonGlow.position.set(24, 62, -181);
+  scene.add(moonGlow);
 
   /* ============================================================
      四、水面太极 + 涟漪圈
@@ -314,8 +344,8 @@
         g.fillText(ch, s / 2 + k * 1.6, s / 2 + k * 2.0);
       }
       g.globalAlpha = 1;
-      g.shadowColor = "rgba(238,200,100,0.9)";
-      g.shadowBlur = 30;
+      g.shadowColor = "rgba(238,200,100,0.95)";
+      g.shadowBlur = 40;
       var grd = g.createLinearGradient(0, s * 0.14, 0, s * 0.86);
       grd.addColorStop(0, "#faecae");
       grd.addColorStop(0.45, "#e6c46a");
@@ -346,6 +376,9 @@
     return tex;
   }
 
+  /* 可点标签的金色光晕纹理（只有能点进去的鎏金字才有） */
+  var haloTex = radialTex("rgba(244,210,116,0.60)", "rgba(244,210,116,0)");
+
   var tagMeshes = [];
   var airMeshes = [];
 
@@ -365,6 +398,19 @@
         baseY: c.pos[1], ph: Math.random() * Math.PI * 2,
         pulse: 0, scaleT: 1, size: size
       };
+      if (c.gold) {
+        var halo = new THREE.Mesh(
+          new THREE.PlaneGeometry(size * 2.1, size * 2.1),
+          new THREE.MeshBasicMaterial({
+            map: haloTex, transparent: true, opacity: 0.32,
+            blending: THREE.AdditiveBlending, depthWrite: false
+          })
+        );
+        halo.position.z = -0.05;
+        halo.renderOrder = -1;
+        mesh.add(halo);
+        mesh.userData.halo = halo;
+      }
       scene.add(mesh);
       tagMeshes.push(mesh);
     });
@@ -519,6 +565,11 @@
       var ud = m.userData;
       m.lookAt(camera.position);
       m.position.y = ud.baseY + Math.sin(uTime * 0.5 + ud.ph) * (0.4 + ud.z * 0.5) * ts;
+      if (ud.halo) {
+        /* 金光呼吸；悬停时更亮 */
+        ud.halo.material.opacity =
+          (hovered === m ? 0.52 : 0.30) + 0.10 * Math.sin(uTime * 0.8 + ud.ph) * ts;
+      }
       if (ud.pulse > 0) ud.pulse = Math.max(0, ud.pulse - dt * 2.2);
       var target = (hovered === m ? 1.14 : 1) + ud.pulse * 0.12;
       ud.scaleT += (target - ud.scaleT) * 0.15;
