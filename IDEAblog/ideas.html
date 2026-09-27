@@ -46,6 +46,14 @@
         <span class="idea-join-off">出局</span>
       </button>
 
+      <!-- 棋盘样式切换：四套程序化贴图，即点即换，记住上次选择 -->
+      <div class="idea-style" id="idea-style" role="group" aria-label="棋盘样式">
+        <button type="button" data-style="wood" aria-pressed="true">檀木</button>
+        <button type="button" data-style="marble" aria-pressed="false">云石</button>
+        <button type="button" data-style="felt" aria-pressed="false">墨毡</button>
+        <button type="button" data-style="night" aria-pressed="false">星夜</button>
+      </div>
+
       <!-- 靠近目标棋子时弹出的链接入口：绝不自动跳，必须点它 -->
       <a class="idea-near" id="idea-near" href="#" rel="noopener"></a>
 
@@ -157,5 +165,7 @@
   </script>
   <script src="assets/night.js"></script>
   <script src="assets/ink.js"></script>
+  <!-- 性能采样工具：默认不出现在页面上，?perf=1 或 __ideaPerf.on() 才显示 -->
+  <script src="assets/ideas-perf.js"></script>
 </body>
 </html>

@@ -1033,6 +1033,50 @@ body.idea-page.night-bg {
 body.idea-in-play .idea-join .idea-join-on { display: none; }
 body.idea-in-play .idea-join .idea-join-off { display: inline; }
 
+/* 棋盘样式切换：左上角一排小字钮，与入局按钮同一套鎏金细框语言 */
+.idea-page.night-bg .idea-style {
+  position: absolute;
+  left: clamp(16px, 4vw, 52px);
+  top: clamp(64px, 9vh, 96px);
+  z-index: 3;
+  display: flex;
+  gap: 8px;
+  transition: opacity .4s ease, transform .4s ease;
+}
+.idea-style button {
+  padding: 6px 13px;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  letter-spacing: .18em;
+  text-indent: .18em;
+  color: rgba(214, 226, 222, .62);
+  background: rgba(8, 14, 12, .30);
+  border: 1px solid rgba(214, 226, 222, .16);
+  border-radius: 2px;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  transition: color .28s ease, border-color .28s ease, box-shadow .28s ease;
+}
+.idea-style button:hover {
+  color: #fff3d4;
+  border-color: rgba(232, 201, 138, .55);
+}
+.idea-style button.is-on {
+  color: #e8c98a;
+  border-color: rgba(232, 201, 138, .72);
+  box-shadow: 0 0 16px -6px rgba(232, 201, 138, .55);
+}
+/* 入局后专心看棋，样式钮淡出不挡视角（切了的样式会保留） */
+body.idea-in-play .idea-style {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+}
+@media (max-width: 640px) {
+  .idea-page.night-bg .idea-style { top: 58px; left: 16px; gap: 6px; }
+  .idea-style button { padding: 5px 10px; font-size: 11px; }
+}
+
 /* 入局后按钮挪到右下角，别挡着棋子视角 */
 body.idea-in-play .idea-page.night-bg .idea-join {
   top: auto;
@@ -1283,3 +1327,56 @@ body.idea-in-play .idea-play-hint { display: block; }
 .idea-page.night-bg .idea-main--stage { padding: 0; max-width: none; }
 body:not(.idea-board-3d) .idea-page.night-bg .idea-board-stage { height: auto; }
 body:not(.idea-board-3d) .idea-board-shadow { display: none; }
+
+/* ------------------------------------------------------------------
+   性能采样面板（assets/ideas-perf.js）
+   只在 ?perf=1 或 __ideaPerf.on() 时挂到 body 上，平时完全不存在，
+   不占布局、不参与首屏渲染。深色半透明，压在一角不妨碍看画面。
+   ------------------------------------------------------------------ */
+.idea-perf {
+  position: fixed; left: 14px; bottom: 14px; z-index: 9999;
+  width: 236px; max-width: calc(100vw - 28px);
+  padding: 10px 12px 12px;
+  border-radius: 10px;
+  background: rgba(10, 16, 26, .82);
+  border: 1px solid rgba(140, 200, 220, .18);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .5);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px; line-height: 1.5;
+  color: rgba(214, 232, 240, .92);
+  user-select: none;
+}
+.idea-perf-head {
+  display: flex; align-items: center; gap: 6px;
+  padding-bottom: 7px; margin-bottom: 7px;
+  border-bottom: 1px solid rgba(140, 200, 220, .14);
+}
+.idea-perf-title {
+  flex: 1; letter-spacing: .08em;
+  color: rgba(240, 214, 150, .9); font-size: 11px;
+}
+.idea-perf-btn {
+  padding: 2px 6px; border-radius: 5px; cursor: pointer;
+  background: rgba(140, 200, 220, .10);
+  border: 1px solid rgba(140, 200, 220, .22);
+  color: rgba(214, 232, 240, .9);
+  font: inherit; font-size: 10.5px; line-height: 1.4;
+}
+.idea-perf-btn:hover { background: rgba(140, 200, 220, .2); }
+.idea-perf-x { padding: 2px 7px; font-size: 12px; }
+.idea-perf-sec {
+  margin: 9px 0 4px; letter-spacing: .06em; font-size: 10.5px;
+  color: rgba(160, 200, 215, .72);
+}
+.idea-perf-sec:first-child { margin-top: 0; }
+.idea-perf-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.idea-perf-k { color: rgba(196, 218, 228, .78); white-space: nowrap; }
+.idea-perf-v { color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.idea-perf-v em {
+  margin-left: 5px; font-style: normal; font-size: 10px;
+  color: rgba(150, 186, 200, .72);
+}
+@media (max-width: 640px) {
+  .idea-perf { left: 8px; right: 8px; bottom: 8px; width: auto; }
+}

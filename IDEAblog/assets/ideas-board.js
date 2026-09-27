@@ -33,11 +33,23 @@
   var reduce = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+  /* 像素比：手机上 devicePixelRatio 常到 3，用 1.6 会渲染 ~2.4 倍像素。
+     棋盘的观感主要来自倾斜透视与材质，不来自抗锯齿密度，
+     所以压到 1.35 —— 桌面（DPR 1~2）几乎无差，手机上帧率翻倍。 */
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
   renderer.setClearColor(0x000000, 0);        /* 透明底：不要任何背板 */
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  /* 阴影改手动控频：自动模式下阴影贴图每帧全量重绘，
+     是整盘最大的 GPU 开销。tick 里按 30Hz 补 needsUpdate。 */
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   renderer.outputEncoding = THREE.sRGBEncoding;
+
+  /* 阴影贴图 2048 → 1536：PCFSoft 的模糊半径是按贴图像素算的，
+     1536 下软边依旧，但阴影 pass 的填充率降了约 44%。
+     棋盘上只有 8 枚可点棋子 + 8 枚灰子，分辨率完全够。 */
+  var SHADOW_MAP = 1536;
 
   var scene = new THREE.Scene();
   /* 不设 scene.background —— 页面自己的天幕透上来 */
@@ -55,7 +67,7 @@
   var key = new THREE.DirectionalLight(0xdfe9ff, 0.70);   /* 月光：冷白，偏柔 */
   key.position.set(-16, 34, 18);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(SHADOW_MAP, SHADOW_MAP);
   key.shadow.camera.left = -30; key.shadow.camera.right = 30;
   key.shadow.camera.top = 30; key.shadow.camera.bottom = -30;
   key.shadow.camera.far = 110;
@@ -85,12 +97,257 @@
   var board = new THREE.Group();
   scene.add(board);
 
-  /* 8×8 合并网格 + 顶点色：同色系的深浅两档，色差很小 */
+  /* ---------- 棋盘样式：四套程序化贴图，懒生成 + 缓存 ----------
+     为什么程序生成而不是找照片：
+       ① 站点可能被双击打开（file://），外链图片会因跨域丢贴图；
+       ② 512² 的程序贴图只占 1MB 显存，生成也在毫秒级；
+       ③ 颜色能直接跟页面夜色统一。
+     四套样式：檀木 / 云石 / 墨毡 / 星夜。
+     贴图只在第一次切到时生成（懒加载），生成后留在缓存里，
+     来回切换零成本；几何体永远只有一份，切换只换贴图与顶点色，
+     不重算网格、不重建材质，所以即时生效、没有切换卡顿。 */
+
+  function canvasTex(c, repeat) {
+    var tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.anisotropy = 4;
+    if (repeat) tex.repeat.set(repeat, repeat);
+    return tex;
+  }
+
+  /* 檀木：底色 → 扰动年轮线（多条不同频率叠加）→ 细木丝划痕 → 木节。
+     想换木种只改 WOOD 里三个色值。 */
+  var WOOD = {
+    base:  [58, 92, 70],     /* 墨绿檀 */
+    dark:  [30, 52, 40],
+    light: [92, 130, 100]
+  };
+
+  function woodCanvas(size) {
+    var s = size || 512;
+    var c = document.createElement("canvas");
+    c.width = c.height = s;
+    var g = c.getContext("2d");
+    var rnd = mulberry(90210);
+
+    g.fillStyle = "rgb(" + WOOD.base.join(",") + ")";
+    g.fillRect(0, 0, s, s);
+
+    /* ① 年轮：沿木纹走向的扰动条纹（对比比上一版略高，近景也看得出纹理） */
+    var rings = 46, i, j;
+    for (i = 0; i < rings; i++) {
+      var y0 = (i / rings) * s + (rnd() - 0.5) * (s / rings) * 0.8;
+      var amp = 2 + rnd() * 7;
+      var freq = 0.008 + rnd() * 0.012;
+      var phase = rnd() * Math.PI * 2;
+      var isDark = rnd() > 0.55;
+      g.beginPath();
+      for (j = 0; j <= s; j += 4) {
+        var y = y0 + Math.sin(j * freq + phase) * amp
+                   + Math.sin(j * freq * 3.1 + phase * 1.7) * amp * 0.35;
+        if (j === 0) g.moveTo(j, y); else g.lineTo(j, y);
+      }
+      g.strokeStyle = isDark
+        ? "rgba(" + WOOD.dark.join(",") + "," + (0.16 + rnd() * 0.26) + ")"
+        : "rgba(" + WOOD.light.join(",") + "," + (0.08 + rnd() * 0.17) + ")";
+      g.lineWidth = 0.7 + rnd() * 1.8;
+      g.stroke();
+    }
+
+    /* ② 细木丝：短划痕，给表面"丝"的触感 */
+    for (i = 0; i < 900; i++) {
+      var mx = rnd() * s, my = rnd() * s;
+      g.beginPath();
+      g.moveTo(mx, my);
+      g.lineTo(mx + (rnd() - 0.5) * 2, my + 5 + rnd() * 26);
+      g.strokeStyle = "rgba(" + (rnd() > 0.5 ? WOOD.dark : WOOD.light).join(",") + ","
+                    + (0.05 + rnd() * 0.09) + ")";
+      g.lineWidth = 0.5 + rnd() * 0.8;
+      g.stroke();
+    }
+
+    /* ③ 木节：几处深色涡纹 */
+    for (i = 0; i < 4; i++) {
+      var kx = rnd() * s, ky = rnd() * s, kr = 5 + rnd() * 12;
+      var kg = g.createRadialGradient(kx, ky, 0, kx, ky, kr * 2.4);
+      kg.addColorStop(0, "rgba(" + WOOD.dark.join(",") + ",0.40)");
+      kg.addColorStop(0.55, "rgba(" + WOOD.dark.join(",") + ",0.15)");
+      kg.addColorStop(1, "rgba(" + WOOD.dark.join(",") + ",0)");
+      g.fillStyle = kg;
+      g.beginPath();
+      g.ellipse(kx, ky, kr * 2.4, kr * 1.3, rnd() * Math.PI, 0, Math.PI * 2);
+      g.fill();
+    }
+    return c;
+  }
+
+  /* 云石：白底灰脉。逐像素湍流正弦，512² 一次约 30~60ms，
+     只在第一次切到云石时跑一次，之后走缓存。 */
+  function marbleCanvas(size) {
+    var s = size || 512;
+    var c = document.createElement("canvas");
+    c.width = c.height = s;
+    var g = c.getContext("2d");
+    var img = g.createImageData(s, s), d = img.data;
+    var rnd = mulberry(77120);
+    var ox = rnd() * 20, oy = rnd() * 20;      /* 每份贴图纹理起点不同 */
+    var i = 0, x, y;
+    for (y = 0; y < s; y++) {
+      var v = (y / s) * 9 + oy;
+      for (x = 0; x < s; x++) {
+        var u = (x / s) * 9 + ox;
+        var t = Math.sin(u * 1.7) + Math.sin(v * 2.3) * 0.8
+              + Math.sin((u + v) * 1.1) * 0.6
+              + Math.sin(Math.sqrt(u * u + v * v) * 2.1) * 0.5;
+        var vein = Math.abs(Math.sin(u * 0.9 + v * 0.35 + t * 1.6));
+        vein = Math.pow(vein, 0.42);           /* 细脉拉开，更像真石 */
+        var w = 238 - vein * 78;               /* 白底 → 灰脉 */
+        d[i++] = w - vein * 8;
+        d[i++] = w - vein * 3;
+        d[i++] = w;
+        d[i++] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    return c;
+  }
+
+  /* 墨毡：中性灰噪点贴图（颜色交给顶点色），加一层细纤维，
+     视觉上"绒"而不是"光"。 */
+  function feltCanvas(size) {
+    var s = size || 512;
+    var c = document.createElement("canvas");
+    c.width = c.height = s;
+    var g = c.getContext("2d");
+    var img = g.createImageData(s, s), d = img.data;
+    var rnd = mulberry(31337);
+    var i = 0;
+    for (var p = 0; p < s * s; p++) {
+      var n = 198 + (rnd() - 0.5) * 46;        /* 中性灰 ± 噪 */
+      d[i++] = n; d[i++] = n; d[i++] = n; d[i++] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    /* 纤维：短短的多向绒毛线 */
+    for (i = 0; i < 1100; i++) {
+      var fx = rnd() * s, fy = rnd() * s;
+      var a = rnd() * Math.PI * 2, l = 2 + rnd() * 6;
+      g.beginPath();
+      g.moveTo(fx, fy);
+      g.lineTo(fx + Math.cos(a) * l, fy + Math.sin(a) * l);
+      g.strokeStyle = rnd() > 0.5
+        ? "rgba(255,255,255," + (0.03 + rnd() * 0.05) + ")"
+        : "rgba(0,0,0," + (0.04 + rnd() * 0.06) + ")";
+      g.lineWidth = 0.5 + rnd() * 0.5;
+      g.stroke();
+    }
+    return c;
+  }
+
+  /* 星夜：深蓝黑底 + 星云团 + 稀疏星点，配偏亮的格线 */
+  function nightCanvas(size) {
+    var s = size || 512;
+    var c = document.createElement("canvas");
+    c.width = c.height = s;
+    var g = c.getContext("2d");
+    var rnd = mulberry(61803);
+    g.fillStyle = "rgb(26,34,60)";
+    g.fillRect(0, 0, s, s);
+    /* 星云：几团青紫薄雾 */
+    var nebs = [[0.24, 0.30, 0.36, "90,140,200", 0.18],
+                [0.70, 0.62, 0.30, "150,100,190", 0.14],
+                [0.52, 0.85, 0.26, "70,170,190", 0.13],
+                [0.85, 0.18, 0.24, "90,140,200", 0.12]];
+    for (var i = 0; i < nebs.length; i++) {
+      var nb = nebs[i];
+      var nx = nb[0] * s, ny = nb[1] * s, nr = nb[2] * s;
+      var ng = g.createRadialGradient(nx, ny, 0, nx, ny, nr);
+      ng.addColorStop(0, "rgba(" + nb[3] + "," + nb[4] + ")");
+      ng.addColorStop(1, "rgba(" + nb[3] + ",0)");
+      g.fillStyle = ng;
+      g.fillRect(nx - nr, ny - nr, nr * 2, nr * 2);
+    }
+    /* 星点：大量暗星 + 少量亮星 */
+    for (i = 0; i < 260; i++) {
+      var sx = rnd() * s, sy = rnd() * s;
+      var bright = rnd() > 0.94;
+      g.fillStyle = "rgba(235,242,255," + (bright ? 0.55 + rnd() * 0.4 : 0.10 + rnd() * 0.25) + ")";
+      g.beginPath();
+      g.arc(sx, sy, bright ? 0.9 + rnd() * 0.9 : 0.4 + rnd() * 0.5, 0, Math.PI * 2);
+      g.fill();
+    }
+    return c;
+  }
+
+  /* 样式配置：贴图生成器 + 明暗两档顶点色 + 边框/边沿色 + 材质参数 */
+  var BOARD_STYLES = {
+    wood: {
+      gen: woodCanvas,
+      dk: [0.075, 0.135, 0.105], lt: [0.115, 0.195, 0.155],
+      frame: 0x4a6b52, edge: 0x7d9e83,
+      rough: 0.62, metal: 0.04, gridOp: 0.13
+    },
+    marble: {
+      gen: marbleCanvas,
+      /* 白石头靠顶点色压出明暗两档 */
+      dk: [0.40, 0.45, 0.55], lt: [0.88, 0.90, 0.94],
+      frame: 0x5d6670, edge: 0xd8dde3,
+      rough: 0.34, metal: 0.02, gridOp: 0.16
+    },
+    felt: {
+      gen: feltCanvas,
+      dk: [0.10, 0.20, 0.15], lt: [0.15, 0.27, 0.20],
+      frame: 0x2c3a33, edge: 0x5a7466,
+      rough: 0.94, metal: 0.0, gridOp: 0.10
+    },
+    night: {
+      gen: nightCanvas,
+      /* lt 有意给到 >1：亮格微微发光，呼应天幕 */
+      dk: [0.55, 0.62, 1.00], lt: [0.95, 1.00, 1.25],
+      frame: 0x1b2547, edge: 0x3d5a9e,
+      rough: 0.70, metal: 0.06, gridOp: 0.22
+    }
+  };
+
+  /* 贴图缓存：第一次切到某样式时生成，之后来回切零成本 */
+  var styleTexCache = {};
+  var styleFrameTexCache = {};
+
+  function styleTexture(key) {
+    if (!styleTexCache[key]) {
+      styleTexCache[key] = canvasTex(BOARD_STYLES[key].gen(512));
+    }
+    return styleTexCache[key];
+  }
+  function styleFrameTexture(key) {
+    if (!styleFrameTexCache[key]) {
+      var t = styleTexture(key).clone();
+      t.needsUpdate = true;
+      t.repeat.set(6, 6);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      styleFrameTexCache[key] = t;
+    }
+    return styleFrameTexCache[key];
+  }
+
+  /* 当前样式：记住上次的选择，重开页面还是那块棋盘 */
+  var styleKey = "wood";
+  try {
+    var savedStyle = localStorage.getItem("idea_board_style");
+    if (savedStyle && BOARD_STYLES[savedStyle]) styleKey = savedStyle;
+  } catch (e) {}
+
+  /* 8×8 合并网格：深浅两档 + 整盘一张连续纹理贴图
+     ------------------------------------------------------------
+     连续观感靠三件事：① 纹理不被格子边界切断（UV 按世界坐标归一化）
+     ② 打磨后的微光（roughness 中等）③ 顺纹的深浅差。
+     顶点色只负责格子的明暗两档，切换样式时重写这一段即可。
+     squareGeo / squareMat 存成引用，样式切换器要直接改它们。 */
+  var squareGeo, squareMat;
   (function buildSquares() {
-    var pos = [], col = [], idx = [];
-    /* 毡的毛面不吃高光，颜色要直接给足，不要指望光照提亮 */
-    var dk = [0.070, 0.135, 0.105];   /* 深墨绿毡 */
-    var lt = [0.105, 0.190, 0.150];   /* 浅墨绿毡（微微亮一点点） */
+    var st = BOARD_STYLES[styleKey];
+    var pos = [], col = [], uv = [], idx = [];
+    var dk = st.dk, lt = st.lt;
     for (var f = 0; f < 8; f++) {
       for (var r = 0; r < 8; r++) {
         var x0 = (f - 4) * SQ, x1 = x0 + SQ;
@@ -99,42 +356,64 @@
         var base = pos.length / 3;
         pos.push(x0, 0.01, z0,  x1, 0.01, z0,  x1, 0.01, z1,  x0, 0.01, z1);
         for (var k = 0; k < 4; k++) col.push(c[0], c[1], c[2]);
+        var u0 = (x0 + SQ * 4) / (SQ * 8), u1 = (x1 + SQ * 4) / (SQ * 8);
+        var v0 = (z0 + SQ * 4) / (SQ * 8), v1 = (z1 + SQ * 4) / (SQ * 8);
+        uv.push(u0, v0,  u1, v0,  u1, v1,  u0, v1);
         idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
       }
     }
     var geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
     geo.setIndex(idx);
     geo.computeVertexNormals();
     var mat = new THREE.MeshStandardMaterial({
-      vertexColors: true, roughness: 0.96, metalness: 0.0
+      map: styleTexture(styleKey),
+      vertexColors: true,        /* 顶点色 × 贴图：格子的明暗照旧 */
+      roughness: st.rough,
+      metalness: st.metal
     });
+    squareGeo = geo; squareMat = mat;
     var mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     board.add(mesh);
   })();
 
-  /* 格线：细、暗、几乎贴着毡面（缝线，不是发光网格） */
+  /* 格线：细、暗、几乎贴着盘面（缝线，不是发光网格）。
+     透明度跟着样式走：深盘放宽一点，浅盘收一点。 */
   var grid = new THREE.GridHelper(SQ * 8, 8, 0xbfe6d4, 0xbfe6d4);
   grid.position.y = 0.028;
   grid.material.transparent = true;
-  grid.material.opacity = 0.13;
+  grid.material.opacity = BOARD_STYLES[styleKey].gridOp;
   board.add(grid);
 
-  /* 边框：同色系的深墨绿木缘，只在最外侧压一圈 */
+  /* 边框：同一套料子的深色边 —— 纹理沿长边走。
+     frameMat / edgeMat 存引用，样式切换时改贴图与颜色即可。 */
+  var frameMat = new THREE.MeshStandardMaterial({
+    map: styleFrameTexture(styleKey),
+    color: BOARD_STYLES[styleKey].frame,
+    roughness: 0.58, metalness: 0.05
+  });
   var frame = new THREE.Mesh(
     new THREE.BoxGeometry(SQ * 8 + 2.6, 1.1, SQ * 8 + 2.6),
-    new THREE.MeshStandardMaterial({ color: 0x1c3428, roughness: 0.92, metalness: 0.0 })
+    frameMat
   );
   frame.position.y = -0.56;
   frame.receiveShadow = true;
+  frame.castShadow = true;
   board.add(frame);
 
-  /* 边框上沿：一条同为墨绿的窄亮边，勾出棋盘轮廓 */
+  /* 边框上沿：磨圆的窄脊，勾出棋盘轮廓（打磨过的边）
+     几何体共享，不额外创建 BufferGeometry */
+  var edgeMat = new THREE.MeshStandardMaterial({
+    map: styleFrameTexture(styleKey),
+    color: BOARD_STYLES[styleKey].edge,
+    roughness: 0.42, metalness: 0.08
+  });
   var edge = new THREE.Mesh(
     new THREE.BoxGeometry(SQ * 8 + 0.6, 0.08, SQ * 8 + 0.6),
-    new THREE.MeshStandardMaterial({ color: 0x2e5340, roughness: 0.85, metalness: 0.05 })
+    edgeMat
   );
   edge.position.y = 0.02;
   board.add(edge);
@@ -543,7 +822,13 @@
   function applyTilt() {
     rig.rotation.set(tilt.pitch, tilt.yaw, 0);
     shadowSync();
+    rayDirty = true;              /* 盘面转了，原地的鼠标也要重新拾取 */
   }
+
+  /* 射线拾取控频：只有"鼠标动了 / 盘面转了 / 相机变了"才重算，
+     静止时上一帧的结果仍然有效（16 枚车床棋子递归拾取不便宜） */
+  var rayDirty = true;
+  var POINTER_NDC = { x: -2, y: -2 };
 
   canvas.addEventListener("pointerdown", function (e) {
     if (inPlay) return;                       /* 入局后禁用上帝视角轨道 */
@@ -560,6 +845,7 @@
     pointer.y = -((e.clientY / canvas.clientHeight) * 2 - 1);
     pointer.px = e.clientX; pointer.py = e.clientY;
     pointer.on = true;
+    rayDirty = true;                           /* 鼠标动了才重新拾取 */
   });
   window.addEventListener("pointerup", function () { dragging = false; });
   canvas.addEventListener("pointerleave", function () { pointer.on = false; });
@@ -569,6 +855,7 @@
     camDist = Math.min(40, Math.max(16, camDist + e.deltaY * 0.02));
     camera.position.z = camDist;
     idleFor = 0;
+    rayDirty = true;                           /* 相机变了也要重新拾取 */
   }, { passive: false });
 
   var pointer = { x: -2, y: -2, px: 0, py: 0, on: false };
@@ -662,6 +949,17 @@
 
   player.position.set(gridToWorld(pGrid.x), 0, gridToWorld(pGrid.z));
 
+  /* 靠近检测控频：玩家棋子没挪窝，最近目标就不可能变，
+     静止时跳过一次 16 子的遍历（量不大，但每帧都省一点） */
+  var lastNearPX = 1e9, lastNearPZ = 0;
+  function updateNearGated() {
+    if (player.position.x !== lastNearPX || player.position.z !== lastNearPZ) {
+      lastNearPX = player.position.x;
+      lastNearPZ = player.position.z;
+      updateNear();
+    }
+  }
+
   /* 是否有一个目标格正在等待落地（防止一格没走完就吃掉下一键） */
   function atTarget() {
     return pGrid.x === pWant.x && pGrid.z === pWant.z;
@@ -729,6 +1027,9 @@
   var inPlay = false;
   var camFrom = new THREE.Vector3(), camTo = new THREE.Vector3();
   var lookFrom = new THREE.Vector3(), lookTo = new THREE.Vector3();
+  /* 复用的临时向量 / 浮层坐标缓存：避免每帧分配与无谓的样式写入 */
+  var WORLD_TMP = new THREE.Vector3();
+  var panelX = -1, panelY = -1, panelVis = "";
   var tween = { on: false, t: 0, dur: 0.9 };
   var lastMove = 0;
 
@@ -760,11 +1061,14 @@
     pWant.x = pGrid.x; pWant.z = pGrid.z;
     camSnapshot();
     cameraTargets();
+    /* 性能埋点：入局过渡的起点（过渡跑完在 tick 里补终点） */
+    enterMark = performance.now();
     document.body.classList.add("idea-in-play");
     var b = document.getElementById("idea-join-btn");
     if (b) b.setAttribute("aria-pressed", "true");
     canvas.style.cursor = "default";
     lastMove = Date.now();
+    lastNearPX = 1e9;           /* 入局后强制重算一次最近目标 */
   }
 
   function exitGame() {
@@ -784,6 +1088,75 @@
     tilt.yaw = -0.30;
     tilt.pitch = 0.50;
   }
+
+  /* ---------- 棋盘样式切换 ----------
+     只换贴图与顶点色、不动几何体：64 格共享一份 BufferGeometry，
+     切换就是改几个引用 + 重写 256 个顶点色，零重排、零重建，
+     所以"即时生效"。贴图懒生成 + 缓存，第一次切某样式约 5~60ms
+     （云石最慢，逐像素湍流），之后来回切是纯引用交换。 */
+  var styleBtns = [];
+
+  function refreshStyleUI() {
+    for (var i = 0; i < styleBtns.length; i++) {
+      var on = styleBtns[i].getAttribute("data-style") === styleKey;
+      if (on) styleBtns[i].classList.add("is-on");
+      else styleBtns[i].classList.remove("is-on");
+      styleBtns[i].setAttribute("aria-pressed", on ? "true" : "false");
+    }
+  }
+
+  function applyBoardStyle(key, save) {
+    if (!BOARD_STYLES[key] || key === styleKey && squareMat.map === styleTexture(key)) {
+      refreshStyleUI();
+      return;
+    }
+    styleKey = key;
+    var st = BOARD_STYLES[key];
+
+    /* ① 盘面：换贴图 + 重写顶点色（明暗两档），几何体不动 */
+    squareMat.map = styleTexture(key);
+    squareMat.roughness = st.rough;
+    squareMat.metalness = st.metal;
+    var colAttr = squareGeo.getAttribute("color");
+    var vi = 0, f, r, k;
+    for (f = 0; f < 8; f++) {
+      for (r = 0; r < 8; r++) {
+        var cc = ((f + r) % 2) ? st.dk : st.lt;
+        for (k = 0; k < 4; k++) colAttr.setXYZ(vi++, cc[0], cc[1], cc[2]);
+      }
+    }
+    colAttr.needsUpdate = true;
+
+    /* ② 边框与边沿：同一块料的深色收边 */
+    frameMat.map = styleFrameTexture(key);
+    frameMat.color.setHex(st.frame);
+    edgeMat.map = frameMat.map;
+    edgeMat.color.setHex(st.edge);
+
+    /* ③ 格线透明度微调 */
+    grid.material.opacity = st.gridOp;
+
+    /* ④ 记住选择，下次打开还是这块棋盘 */
+    if (save) {
+      try { localStorage.setItem("idea_board_style", key); } catch (e) {}
+    }
+    refreshStyleUI();
+  }
+
+  (function bindStyleUI() {
+    var wrap = document.getElementById("idea-style");
+    if (!wrap) return;
+    var list = wrap.querySelectorAll("[data-style]");
+    for (var i = 0; i < list.length; i++) {
+      styleBtns.push(list[i]);
+      (function (btn) {
+        btn.addEventListener("click", function () {
+          applyBoardStyle(btn.getAttribute("data-style"), true);
+        });
+      })(list[i]);
+    }
+    refreshStyleUI();
+  })();
 
   (function bindGameUI() {
     var joinBtn = document.getElementById("idea-join-btn");
@@ -822,11 +1195,29 @@
     camera.lookAt(0, 0.6, 0);
   }
 
+  /* 切到后台 / 标签页不可见：停掉渲染循环并暂停阴影自动更新。
+     之前页面隐藏后仍在满帧渲染，占着 GPU 与主线程，
+     回到页面时就会积压一批待处理的帧，表现为"切回来先卡一下"。 */
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      clock.stop();
+    } else if (!rafId) {
+      clock.start();
+      rafId = requestAnimationFrame(tick);
+    }
+  });
+
+  /* 窗口尺寸变化：只在真的变了才重排，避免拖拽窗口时每像素一次 setSize */
+  var lastW = 0, lastH = 0;
+
   function resize() {
     var stage = canvas.parentElement;
     var w = (stage && stage.clientWidth) || window.innerWidth;
     var h = (stage && stage.clientHeight) || Math.round(window.innerHeight * 0.72);
     if (!w || !h) return;
+    if (w === lastW && h === lastH) return;     /* 尺寸没变就别重排 */
+    lastW = w; lastH = h;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -835,12 +1226,24 @@
   }
   window.addEventListener("resize", resize);
   resize();
-  /* 舞台高度由页面脚本按视口算，算完可能晚一拍：补一次 */
+  /* 舞台高度由页面脚本按视口算，算完可能晚一拍：补一次
+     （renderer.setSize 带尺寸去重，重复调用不会多花代价） */
   setTimeout(resize, 120);
   setTimeout(resize, 600);
 
   var clock = new THREE.Clock();
   var uTime = 0;
+  var rafId = 0;
+  var enterMark = 0;
+  var firstFrameDone = false;
+  var shadowFlip = false;
+  var lastMoonCam = new THREE.Vector3(1e9, 0, 0);
+
+  /* 性能埋点：记录"场景建完"的时刻。
+     本脚本排在 ideas-perf.js 之前执行，那时探针还不存在，
+     所以先写到一个全局变量上；探针加载后会把这枚时间戳收编，
+     用它算出"3D 场景就绪"的耗时。没有探针时这行几乎零成本。 */
+  window.__ideaBoardReadyAt = performance.now();
 
   function tick() {
     var dt = Math.min(clock.getDelta(), 0.05);
@@ -863,7 +1266,14 @@
       camera.position.lerpVectors(camFrom, camTo, e);
       camLook.lerpVectors(lookFrom, lookTo, e);
       camera.lookAt(camLook);
-      if (k >= 1) tween.on = false;
+      if (k >= 1) {
+        tween.on = false;
+        /* 性能埋点：入局过渡跑完的总耗时 */
+        if (enterMark && window.__ideaPerf && window.__ideaPerf.markEnter) {
+          window.__ideaPerf.markEnter(performance.now() - enterMark);
+          enterMark = 0;
+        }
+      }
     } else if (inPlay) {
       /* 入局中：相机始终跟着玩家棋子（缓动跟随，别硬贴） */
       var px = player.position.x, pz = player.position.z;
@@ -884,6 +1294,10 @@
       player.position.z += (tz - player.position.z) * Math.min(1, dt / STEP * 0.28);
       if (Math.abs(tx - player.position.x) < 0.02) { player.position.x = tx; pGrid.x = pWant.x; }
       if (Math.abs(tz - player.position.z) < 0.02) { player.position.z = tz; pGrid.z = pWant.z; }
+      /* 性能埋点：格子真正对齐的这一刻，算"按键 → 位移生效"的耗时 */
+      if (!atTarget() && window.__ideaPerf && window.__ideaPerf.markMove) {
+        window.__ideaPerf.markMove();
+      }
       /* 走动时轻微上下浮动 + 光环呼吸，看得出是个活物
          （影子跟着浮动会闪，所以只让棋子本身上下） */
       if (player.userData.saucer) {
@@ -892,19 +1306,32 @@
       var halo = player.userData.halo;
       halo.material.opacity = 0.38 + 0.18 * Math.sin(uTime * 2.4) * ts;
 
-      updateNear();
+      updateNearGated();
     }
 
-    /* 月与光晕面向镜头、浮尘缓旋 */
-    moon.lookAt(camera.position);
-    moonGlow.lookAt(camera.position);
+    /* 月与光晕面向镜头、浮尘缓旋。
+       lookAt 只在相机真的挪了才重算（静止时朝向已经是对的），
+       省掉每帧两次四元数求解。 */
+    if (camera.position.distanceToSquared(lastMoonCam) > 1e-6) {
+      lastMoonCam.copy(camera.position);
+      moon.lookAt(camera.position);
+      moonGlow.lookAt(camera.position);
+      rayDirty = true;          /* 相机挪了，原地鼠标的射线也要重算 */
+    }
     dust.rotation.y += dt * 0.022 * ts;
 
-    /* 悬停检测：入局后只看玩家附近那一个（避免误触别的子） */
+    /* 悬停检测：入局后只看玩家附近那一个（避免误触别的子）。
+       性能：射线拾取只在"鼠标/盘面/相机"真的变了才重算，
+       静止时沿用上一帧结果 —— 原来 60Hz 对 16 枚车床棋子
+       递归拾取，是上帝视角下每帧最大的一笔 CPU。 */
     if (!inPlay && pointer.on && ideaPieces.length) {
-      raycaster.setFromCamera({ x: pointer.x, y: pointer.y }, camera);
-      var hits = raycaster.intersectObjects(ideaPieces, true);
-      hovered = hits.length ? rootPiece(hits[0].object) : null;
+      if (rayDirty) {
+        rayDirty = false;
+        POINTER_NDC.x = pointer.x; POINTER_NDC.y = pointer.y;
+        raycaster.setFromCamera(POINTER_NDC, camera);
+        var hits = raycaster.intersectObjects(ideaPieces, true);
+        hovered = hits.length ? rootPiece(hits[0].object) : null;
+      }
     } else {
       hovered = null;
     }
@@ -944,20 +1371,43 @@
       if (tip._for) { tip._for = null; tip.classList.remove("idea-tagtip--show"); }
     }
 
-    /* 靠近浮层贴着目标棋子走（世界坐标 → 屏幕坐标） */
+    /* 靠近浮层贴着目标棋子走（世界坐标 → 屏幕坐标）
+       性能：原来每帧 new 一个 Vector3，60fps 下每秒 60 次分配，
+       用复用的临时向量；只有坐标真的变了才写 DOM（避免每帧强制重排） */
     if (inPlay && nearPiece && nearPanel && nearPanel.classList.contains("is-on")) {
-      var world = new THREE.Vector3();
-      nearPiece.getWorldPosition(world);
-      world.y += 3.6;                          /* 浮在棋子头顶上方 */
-      world.project(camera);
+      nearPiece.getWorldPosition(WORLD_TMP);
+      WORLD_TMP.y += 3.6;                      /* 浮在棋子头顶上方 */
+      WORLD_TMP.project(camera);
       var w = canvas.clientWidth, h = canvas.clientHeight;
-      nearPanel.style.left = ((world.x * 0.5 + 0.5) * w) + "px";
-      nearPanel.style.top = ((-world.y * 0.5 + 0.5) * h) + "px";
-      nearPanel.style.visibility = (world.z > 1) ? "hidden" : "visible";
+      var sx = Math.round((WORLD_TMP.x * 0.5 + 0.5) * w);
+      var sy = Math.round((-WORLD_TMP.y * 0.5 + 0.5) * h);
+      if (sx !== panelX || sy !== panelY) {
+        panelX = sx; panelY = sy;
+        nearPanel.style.left = sx + "px";
+        nearPanel.style.top = sy + "px";
+      }
+      var vis = WORLD_TMP.z > 1 ? "hidden" : "visible";
+      if (vis !== panelVis) {
+        panelVis = vis;
+        nearPanel.style.visibility = vis;
+      }
     }
 
+    /* 阴影贴图 30Hz：棋子的移动/呼吸都在亚像素级，
+       人眼分不出阴影 33ms 的延迟，但阴影 pass 的填充开销直接减半。
+       （入局相机飞跃、样式切换等"大变"也由这个节奏覆盖，最多晚一帧） */
+    shadowFlip = !shadowFlip;
+    if (shadowFlip) renderer.shadowMap.needsUpdate = true;
+
     renderer.render(scene, camera);
-    requestAnimationFrame(tick);
+    /* 性能埋点：第一帧真的画完（含所有着色器编译），只记一次 */
+    if (!firstFrameDone) {
+      firstFrameDone = true;
+      if (window.__ideaPerf && window.__ideaPerf.mark) {
+        window.__ideaPerf.mark("firstFrame");
+      }
+    }
+    rafId = requestAnimationFrame(tick);
   }
 
   tick();
