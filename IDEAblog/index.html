@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>一念未落 · 想法集</title>
-  <meta name="description" content="未成之想，皆可入册。一个只放创意想法的水墨角落。">
+  <meta name="description" content="未成之想，皆可入册。滚动下潜，进入一片水墨山海。">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='3' y='3' width='58' height='58' rx='9' fill='%23a8322d'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' fill='%23f4f1e8' font-family='KaiTi,serif'%3E念%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="idea-page idea-scheme-dark">
+<body class="idea-page idea-scheme-dark idea-dive">
 
   <header class="idea-head idea-head--hero">
     <a class="idea-brand" href="index.html">一念未落</a>
@@ -22,14 +22,16 @@
     </nav>
   </header>
 
-  <main class="idea-hero">
+  <main class="idea-hero idea-hero--dive">
 
-    <!-- ======== 墨流水境 v2：assets/ink-water.js 三轴分层逐帧绘制 ========
-         xy 平面 = 山水墨河（远中近三层山峦 + 三层滚动墨河 + 太极涟漪）
-         z  轴   = 可点击的个人标签字（近鎏金 / 远墨影虚焦） ======== -->
-    <canvas class="idea-inkcanvas" aria-hidden="true"></canvas>
+    <!-- ======== 一念入海：assets/ink-world.js · Three.js 真 3D ========
+         滚动 = 下潜（相机沿路径下降）
+         鼠标 = 视角（第一人称 VR 式转头）
+         点字 = 入册（鎏金标签字射线拾取跳页） ======== -->
+    <canvas id="idea-gl" class="idea-gl" aria-hidden="true"></canvas>
+    <div class="idea-vignette" aria-hidden="true"></div>
 
-    <!-- ======== 竖排题字：主标题 + 副题 + 印章 ======== -->
+    <!-- ======== 竖排题字（下潜开始时淡出） ======== -->
     <div class="idea-titleblock">
       <div class="idea-subcol">
         <p class="idea-vsub">想法未必要成熟，<br>才配被写下来</p>
@@ -38,16 +40,37 @@
       <h1 class="idea-vtitle"><span>一</span><span>念</span><span>未</span><span>落</span></h1>
     </div>
 
-    <!-- 操作提示：告诉访客字能点 -->
-    <div class="idea-hintline" aria-hidden="true">点字即入册 · 鎏金为标</div>
+    <!-- 操作提示 -->
+    <div class="idea-hintline" aria-hidden="true">滚动即下潜 · 鼠标即视角 · 点字即入册</div>
 
-    <!-- 入口 -->
-    <a class="idea-enter" href="ideas.html">落笔入册</a>
+    <!-- 下潜终点：入口面板 -->
+    <div class="idea-dive-end" id="idea-dive-end">
+      <a class="idea-dive-enter" href="ideas.html">落笔入册</a>
+      <span class="idea-dive-sub">一念未落 · 未成之想皆可入册</span>
+    </div>
 
-    <footer class="idea-foot idea-foot--hero">© 2026 一念未落 · 未成之想，皆可入册</footer>
+    <!-- WebGL 不可用时的静态降级封面 -->
+    <div class="idea-webgl-fallback">
+      <h1>一念未落</h1>
+      <p>此设备暂不支持 3D 水墨场景，画已备好，直接入册。</p>
+      <a href="ideas.html">落笔入册 →</a>
+    </div>
   </main>
 
-  <script src="assets/ink-water.js"></script>
-  <script src="assets/ink.js"></script>
+  <!-- 滚动轨道：提供下潜的滚动空间（约 3.4 屏） -->
+  <div class="idea-track" aria-hidden="true"></div>
+
+  <script type="importmap">
+    { "imports": { "three": "./assets/vendor/three.module.js" } }
+  </script>
+  <script type="module" src="assets/ink-world.js"></script>
+  <script>
+    /* 看门狗：5 秒后 3D 还没就绪（老浏览器/无 WebGL/模块加载失败）→ 静态降级 */
+    window.addEventListener("load", function () {
+      setTimeout(function () {
+        if (!window.IDEA_GL_READY) document.body.classList.add("idea-no-webgl");
+      }, 5000);
+    });
+  </script>
 </body>
 </html>

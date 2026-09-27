@@ -520,10 +520,10 @@ body.idea-page {
   color: rgba(244, 241, 232, .5);
 }
 
-/* 标签字的悬停提示牌（ink-water.js 动态定位） */
+/* 标签字的悬停提示牌（ink-world.js 投影定位，fixed 跟随屏幕） */
 .idea-tagtip {
-  position: absolute;
-  z-index: 5;
+  position: fixed;
+  z-index: 6;
   transform: translate(-50%, -100%);
   padding: 4px 12px;
   background: rgba(10, 16, 22, .88);
@@ -552,6 +552,138 @@ body.idea-page {
   letter-spacing: .3em;
   user-select: none;
   pointer-events: none;
+}
+
+/* ============================================================
+   3D 下潜封面（idea-dive）
+   ============================================================ */
+
+.idea-dive .idea-head--hero { position: fixed; }
+
+.idea-hero--dive {
+  height: 100vh;
+  height: 100svh;
+  min-height: 0;
+  background: #070c12;
+}
+
+/* 下潜页用 fixed 暗角替代 hero 伪元素黑边 */
+.idea-hero--dive::before,
+.idea-hero--dive::after { display: none; }
+
+.idea-gl {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: block;
+}
+
+.idea-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 46%, transparent 55%, rgba(2, 4, 7, .55) 100%);
+}
+
+.idea-dive .idea-titleblock {
+  position: fixed;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.idea-dive .idea-hintline { position: fixed; }
+
+/* 滚动轨道 */
+.idea-track {
+  height: 340vh;
+  position: relative;
+  z-index: 0;
+}
+
+/* 下潜终点的入口面板 */
+.idea-dive-end {
+  position: fixed;
+  left: 50%;
+  bottom: 13vh;
+  transform: translateX(-50%) translateY(14px);
+  z-index: 3;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .6s ease, transform .6s ease;
+}
+
+.idea-dive-end.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+.idea-dive-enter {
+  display: inline-block;
+  padding: 12px 34px;
+  border: 1px solid rgba(236, 231, 218, .55);
+  border-radius: 2px;
+  background: rgba(10, 16, 22, .35);
+  color: #ece7da;
+  text-decoration: none;
+  font-size: 16px;
+  letter-spacing: .5em;
+  text-indent: .5em;
+  backdrop-filter: blur(3px);
+  transition: color .3s ease, border-color .3s ease;
+}
+
+.idea-dive-enter:hover { color: #f2df9e; border-color: #e6c46a; }
+
+.idea-dive-sub {
+  display: block;
+  margin-top: 14px;
+  font-size: 12.5px;
+  letter-spacing: .28em;
+  color: rgba(198, 212, 218, .6);
+}
+
+/* WebGL 降级封面 */
+.idea-webgl-fallback {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  text-align: center;
+  padding-top: 32vh;
+  background: radial-gradient(120% 90% at 38% 58%, #101a23 0%, #0a1118 46%, #05080c 100%);
+}
+
+.idea-no-webgl .idea-webgl-fallback { display: block; }
+.idea-no-webgl .idea-gl,
+.idea-no-webgl .idea-vignette,
+.idea-no-webgl .idea-hintline,
+.idea-no-webgl .idea-dive-end { display: none; }
+
+.idea-webgl-fallback h1 {
+  margin: 0 0 14px;
+  font-family: var(--font-brush);
+  font-weight: 400;
+  font-size: 56px;
+  color: #ece7da;
+}
+
+.idea-webgl-fallback p {
+  margin: 0 0 26px;
+  color: rgba(198, 212, 218, .7);
+  font-size: 14px;
+}
+
+.idea-webgl-fallback a {
+  color: #e6c46a;
+  text-decoration: none;
+  border: 1px solid rgba(230, 196, 106, .5);
+  border-radius: 2px;
+  padding: 10px 26px;
+  letter-spacing: .3em;
+  text-indent: .3em;
 }
 
 /* ---------- 墨迹交互（ink.js 生成） ---------- */
