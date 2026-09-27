@@ -24,50 +24,10 @@
 
   <main class="idea-hero">
 
-    <!-- ======== 墨流水境：assets/ink-water.js 逐帧绘制（暗青墨河 + 太极涟漪 + 3D 漂浮书法字） ======== -->
+    <!-- ======== 墨流水境 v2：assets/ink-water.js 三轴分层逐帧绘制 ========
+         xy 平面 = 山水墨河（远中近三层山峦 + 三层滚动墨河 + 太极涟漪）
+         z  轴   = 可点击的个人标签字（近鎏金 / 远墨影虚焦） ======== -->
     <canvas class="idea-inkcanvas" aria-hidden="true"></canvas>
-
-    <!-- ======== 太极与飞墨：SVG 手绘，浮在活墨之上 ======== -->
-    <svg class="idea-swirl" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-      <defs>
-        <!-- 小模糊：飞墨大点用的 -->
-        <filter id="ideaSoft2" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="4.5"/>
-        </filter>
-        <!-- 墨边：用噪声把几何线条打毛，去掉「电脑画」的感觉 -->
-        <filter id="ideaInk" x="-25%" y="-25%" width="150%" height="150%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="7" result="n"/>
-          <feDisplacementMap in="SourceGraphic" in2="n" scale="13"/>
-        </filter>
-      </defs>
-
-      <g>
-        <g class="idea-taiji" filter="url(#ideaInk)" opacity="0.72">
-          <circle cx="430" cy="400" r="238" fill="none" stroke="#26231e" stroke-width="7"/>
-          <path d="M 430 162 A 119 119 0 0 1 430 400 A 119 119 0 0 0 430 638"
-                fill="none" stroke="#26231e" stroke-width="6"/>
-          <circle cx="430" cy="281" r="30" fill="none" stroke="#26231e" stroke-width="5"/>
-          <circle cx="430" cy="519" r="30" fill="none" stroke="#26231e" stroke-width="5"/>
-          <!-- 阴面淡淡填充一层墨 -->
-          <path d="M 430 162 A 238 238 0 0 0 430 638 A 119 119 0 0 1 430 400 A 119 119 0 0 0 430 162 Z"
-                fill="#26231e" opacity="0.14"/>
-        </g>
-
-        <!-- 飞墨：散落的墨点 -->
-        <g fill="#26231e">
-          <circle cx="150" cy="330" r="5"   opacity="0.5"/>
-          <circle cx="205" cy="520" r="3"   opacity="0.35"/>
-          <circle cx="760" cy="250" r="4"   opacity="0.45"/>
-          <circle cx="820" cy="470" r="6"   opacity="0.30" filter="url(#ideaSoft2)"/>
-          <circle cx="640" cy="640" r="3.5" opacity="0.4"/>
-          <circle cx="300" cy="180" r="2.5" opacity="0.35"/>
-          <circle cx="920" cy="180" r="3"   opacity="0.30"/>
-          <circle cx="520" cy="720" r="4"   opacity="0.35"/>
-          <circle cx="960" cy="560" r="2"   opacity="0.3"/>
-          <circle cx="70"  cy="620" r="2.5" opacity="0.28"/>
-        </g>
-      </g>
-    </svg>
 
     <!-- ======== 竖排题字：主标题 + 副题 + 印章 ======== -->
     <div class="idea-titleblock">
@@ -77,6 +37,9 @@
       </div>
       <h1 class="idea-vtitle"><span>一</span><span>念</span><span>未</span><span>落</span></h1>
     </div>
+
+    <!-- 操作提示：告诉访客字能点 -->
+    <div class="idea-hintline" aria-hidden="true">点字即入册 · 鎏金为标</div>
 
     <!-- 入口 -->
     <a class="idea-enter" href="ideas.html">落笔入册</a>

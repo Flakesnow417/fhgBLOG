@@ -520,6 +520,40 @@ body.idea-page {
   color: rgba(244, 241, 232, .5);
 }
 
+/* 标签字的悬停提示牌（ink-water.js 动态定位） */
+.idea-tagtip {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, -100%);
+  padding: 4px 12px;
+  background: rgba(10, 16, 22, .88);
+  border: 1px solid rgba(158, 198, 214, .32);
+  border-radius: 3px;
+  color: #d8e4ea;
+  font-size: 12.5px;
+  letter-spacing: .22em;
+  text-indent: .22em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+
+.idea-tagtip--show { opacity: 1; }
+
+/* 封面左下角操作提示 */
+.idea-hintline {
+  position: absolute;
+  left: 22px;
+  bottom: 20px;
+  z-index: 3;
+  color: rgba(158, 184, 198, .48);
+  font-size: 12px;
+  letter-spacing: .3em;
+  user-select: none;
+  pointer-events: none;
+}
+
 /* ---------- 墨迹交互（ink.js 生成） ---------- */
 
 .idea-ink-layer {
