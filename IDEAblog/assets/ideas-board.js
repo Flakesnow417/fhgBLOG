@@ -56,7 +56,11 @@
   /* 雾只作用在棋盘本身，用很浅的量让远端的格子化开 */
   scene.fog = new THREE.Fog(0x0a1420, 52, 145);
 
-  var camera = new THREE.PerspectiveCamera(34, 1, 0.1, 400);
+  /* 相机视野：上帝视角用 34°（长焦、平视展示柜的感觉），
+     入局第一人称放宽到 58°（有纵深、有"站在棋盘里"的临场感），
+     出入局时随相机 tween 一起渐变，不跳变。 */
+  var GOD_FOV = 34, PLAY_FOV = 58;
+  var camera = new THREE.PerspectiveCamera(GOD_FOV, 1, 0.1, 400);
 
   /* ---------- 灯光：月光当主光源，霓虹只做极弱补色 ----------
      上一版整盘发粉紫的教训：紫红边框面积大 + 环境光偏高，
@@ -1032,10 +1036,33 @@
   var panelX = -1, panelY = -1, panelVis = "";
   var tween = { on: false, t: 0, dur: 0.9 };
   var lastMove = 0;
+  var fovFrom = GOD_FOV, fovTo = GOD_FOV;
+  /* 棋盘倾角也随 tween 渐变：入局时把棋盘放平（yaw/pitch → 0），
+     出局时回到上帝视角的展示倾角。
+     为什么入局要放平：玩家棋子的坐标是"棋盘局部坐标"，
+     棋盘斜着时它和相机所在的世界坐标对不上，第一人称会飘；
+     放平后局部即世界，眼睛位置、按键方向、视线朝向全部严丝合缝，
+     而且平视时地平线不该歪。 */
+  var tiltFrom = { yaw: 0, pitch: 0 }, tiltTo = { yaw: 0, pitch: 0 };
+  var GOD_TILT = { yaw: -0.30, pitch: 0.50 };
+  var PLAY_TILT = { yaw: 0, pitch: 0 };
+
+  /* ---------- 入局第一人称：你就是棋盘上的一枚棋子 ----------
+     相机站在玩家棋子的"头顶"：宝珠尖在 y≈1.44，眼睛放到 1.66；
+     眼睛比棋子中心略靠后 0.75，这样低头时能在画面下缘瞥见
+     自己的宝珠顶 —— "我是这枚棋子"的身体感就来自这一点。
+     视线朝 -z 横看整盘，微微下俯 ~11°：近处棋子高过头顶、
+     远处棋子与月亮在地平线上，是"站在棋子中间"而不是"趴在盘上"。 */
+  var EYE_H = 1.66;          /* 眼睛离盘面的高度 */
+  var EYE_BACK = 0.75;       /* 眼睛在棋子中心略靠后（+z 为后） */
+  var VIEW_AHEAD = 7.0;      /* 视线落点距离 */
+  var VIEW_DROP = 1.55;      /* 落点比眼睛低这么多（下俯角） */
 
   function camSnapshot() {
     camFrom.copy(camera.position);
     lookFrom.copy(camLook);
+    fovFrom = camera.fov;
+    tiltFrom.yaw = tilt.yaw; tiltFrom.pitch = tilt.pitch;
   }
 
   function cameraTargets() {
@@ -1043,11 +1070,15 @@
       /* 上帝视角：回到初始机位与倾角 */
       camTo.set(0, 3.4, camDist);
       lookTo.set(0, 0.6, 0);
+      fovTo = GOD_FOV;
+      tiltTo.yaw = GOD_TILT.yaw; tiltTo.pitch = GOD_TILT.pitch;
     } else {
-      /* 入局：贴到玩家棋子斜后方，压到接近盘面的高度 */
+      /* 入局第一人称：眼睛长在玩家棋子头顶，棋盘放平 */
       var px = player.position.x, pz = player.position.z;
-      camTo.set(px - 3.4, 3.6, pz + 8.2);
-      lookTo.set(px * 0.4, 0.75, pz - 3.2);
+      camTo.set(px, EYE_H, pz + EYE_BACK);
+      lookTo.set(px, EYE_H - VIEW_DROP, pz - VIEW_AHEAD);
+      fovTo = PLAY_FOV;
+      tiltTo.yaw = PLAY_TILT.yaw; tiltTo.pitch = PLAY_TILT.pitch;
     }
     tween.on = true; tween.t = 0;
   }
@@ -1080,13 +1111,12 @@
     var b = document.getElementById("idea-join-btn");
     if (b) b.setAttribute("aria-pressed", "false");
     canvas.style.cursor = "grab";
-    /* 浮层收掉，玩家棋子隐去 */
+    /* 浮层收掉，玩家棋子隐去。
+       上帝视角的倾角由 tween 渐变回去（cameraTargets 已设好目标），
+       不再硬切，出局和入局一样顺滑。 */
     if (nearPanel) nearPanel.classList.remove("is-on");
     nearPiece = null;
     player.visible = false;
-    /* 上帝视角的倾角回到初始，避免歪着出去 */
-    tilt.yaw = -0.30;
-    tilt.pitch = 0.50;
   }
 
   /* ---------- 棋盘样式切换 ----------
@@ -1181,18 +1211,24 @@
 
   /* 自适应取景：按画布宽高算出「让整盘刚好装进来」的距离 ——
      倾斜后棋盘在屏幕上的投影会变宽变高，所以留了余量，
-     并给移动端单独放宽。这样任何尺寸都不会被裁掉边角。 */
+     并给移动端单独放宽。这样任何尺寸都不会被裁掉边角。
+     注意这里固定用 GOD_FOV 计算：入局中视野是 58°，
+     用错焦距会把上帝视角的机位算飞。 */
   function fitToCanvas(w, h) {
     var aspect = w / h;
     var halfW = B * 1.55;                      /* 倾斜后横向占宽的上界 */
     var halfH = B * 1.30;                      /* 纵向占高（含棋子高度） */
-    var fovY = camera.fov * Math.PI / 180;
+    var fovY = GOD_FOV * Math.PI / 180;
     var fitH = halfH / Math.tan(fovY / 2);
     var fitW = halfW / (Math.tan(fovY / 2) * aspect);
     var need = Math.max(fitH, fitW) * 1.10;    /* 10% 呼吸余量 */
     camDist = Math.max(need, 17);
-    camera.position.z = camDist;
-    camera.lookAt(0, 0.6, 0);
+    /* 入局中机位由"眼睛"逻辑每帧接管，这里只更新目标距离，
+       避免 resize 时相机闪回上帝视角一帧 */
+    if (!inPlay) {
+      camera.position.z = camDist;
+      camera.lookAt(0, 0.6, 0);
+    }
   }
 
   /* 切到后台 / 标签页不可见：停掉渲染循环并暂停阴影自动更新。
@@ -1265,6 +1301,16 @@
       var e = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;   /* easeInOut */
       camera.position.lerpVectors(camFrom, camTo, e);
       camLook.lerpVectors(lookFrom, lookTo, e);
+      /* 视野跟着相机一起渐变：34°↔58°，出入局不跳变 */
+      var fv = fovFrom + (fovTo - fovFrom) * e;
+      if (Math.abs(fv - camera.fov) > 0.01) {
+        camera.fov = fv;
+        camera.updateProjectionMatrix();
+      }
+      /* 棋盘倾角同步渐变：入局放平、出局回展示倾角 */
+      tilt.yaw = tiltFrom.yaw + (tiltTo.yaw - tiltFrom.yaw) * e;
+      tilt.pitch = tiltFrom.pitch + (tiltTo.pitch - tiltFrom.pitch) * e;
+      applyTilt();
       camera.lookAt(camLook);
       if (k >= 1) {
         tween.on = false;
@@ -1275,15 +1321,12 @@
         }
       }
     } else if (inPlay) {
-      /* 入局中：相机始终跟着玩家棋子（缓动跟随，别硬贴） */
-      var px = player.position.x, pz = player.position.z;
-      var wantX = px - 3.4, wantY = 3.6, wantZ = pz + 8.2;
-      camera.position.x += (wantX - camera.position.x) * Math.min(1, dt * 3.2);
-      camera.position.y += (wantY - camera.position.y) * Math.min(1, dt * 3.2);
-      camera.position.z += (wantZ - camera.position.z) * Math.min(1, dt * 3.2);
-      camLook.x += (px * 0.4 - camLook.x) * Math.min(1, dt * 3.6);
-      camLook.y += (0.75 - camLook.y) * Math.min(1, dt * 3.6);
-      camLook.z += (pz - 3.2 - camLook.z) * Math.min(1, dt * 3.6);
+      /* 入局第一人称：眼睛长在棋子头顶，硬跟随（不缓动）。
+         第一人称的相机如果拖尾，人会有"晕船"感；
+         平滑感由棋子自己的走位补间负责，视角永远贴住眼睛。 */
+      var epx = player.position.x, epz = player.position.z;
+      camera.position.set(epx, EYE_H, epz + EYE_BACK);
+      camLook.set(epx, EYE_H - VIEW_DROP, epz - VIEW_AHEAD);
       camera.lookAt(camLook);
     }
 
