@@ -975,35 +975,42 @@ body.idea-page.night-bg {
   background: linear-gradient(0deg, rgba(4, 6, 15, .82), rgba(4, 6, 15, 0));
 }
 
-/* ---------- 棋盘：与天幕连成一体（去掉方框，只留发光边） ---------- */
+/* ---------- 棋盘：毡面桌垫，与天幕连成一体 ----------
+   参考 davesocozy 的桌面：不要方框、不要发光板，
+   只留一圈极暗的紫红毡边 + 一点点暖光，让棋盘像"放在夜里的桌垫"。 */
 
 .idea-page.night-bg .idea-board-wrap {
   height: min(76vh, 760px);
-  border: 1px solid rgba(46, 230, 255, .22);
-  border-radius: 4px;
-  background: transparent;         /* 让 Canvas 里的星空直接透到页面上 */
+  border: 1px solid rgba(146, 74, 118, .32);
+  border-radius: 3px;
+  background: transparent;         /* Canvas 里的星野直接透到页面上 */
   box-shadow:
-    0 0 0 1px rgba(46, 230, 255, .05),
-    0 0 60px -12px rgba(46, 230, 255, .30),
-    0 0 120px -30px rgba(255, 122, 217, .28);
+    0 0 0 1px rgba(146, 74, 118, .06),
+    0 30px 80px -40px rgba(0, 0, 0, .95),
+    0 0 90px -30px rgba(120, 40, 90, .35);
 }
 
-/* 扫描线弱一点，别盖住星空 */
+/* 扫描线几乎收干净：毡面不要 CRT 味 */
 .idea-page.night-bg .idea-board-wrap::after {
   background: repeating-linear-gradient(0deg,
-    rgba(255, 255, 255, .022) 0 1px,
-    transparent 1px 4px);
+    rgba(255, 255, 255, .012) 0 1px,
+    transparent 1px 5px);
 }
 
 .idea-page.night-bg .idea-board-legend {
-  background: rgba(4, 8, 20, .58);
-  border-color: rgba(111, 216, 255, .34);
-  color: rgba(170, 200, 226, .88);
-  backdrop-filter: blur(3px);
+  background: rgba(10, 8, 16, .62);
+  border-color: rgba(146, 74, 118, .38);
+  color: rgba(198, 182, 196, .86);
+  backdrop-filter: blur(4px);
+}
+
+.idea-page.night-bg .idea-board-legend b {
+  color: #e8c98a;
+  text-shadow: 0 0 10px rgba(232, 201, 138, .35);
 }
 
 .idea-page.night-bg .idea-board-op {
-  color: rgba(126, 208, 238, .5);
+  color: rgba(170, 158, 176, .42);
 }
 
 /* ---------- 想法卡片（3D 降级时出现 · 夜版玻璃卡） ---------- */

@@ -35,47 +35,56 @@
   renderer.outputEncoding = THREE.sRGBEncoding;
 
   var scene = new THREE.Scene();
-  /* 千禧深夜：天鹅绒蓝黑夜空，远处化进夜色 */
+  /* 深夜蓝黑：远处化进夜色 */
   scene.background = new THREE.Color(0x070d1f);
   scene.fog = new THREE.Fog(0x070d1f, 46, 130);
 
   var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 400);
 
-  /* ---------- 灯光：月光主光 + 青/品红霓虹补光（Y2K 深夜） ---------- */
-  scene.add(new THREE.AmbientLight(0x36466e, 0.65));
+  /* ---------- 灯光：月光当唯一主光源，霓虹只做微弱补色 ----------
+     davesocozy 那种桌面感靠「一段柔和的顶光 + 大面积暗」，
+     所以这里的整体亮度压得很低，盘面主要靠自身的漫反射读出来。 */
+  scene.add(new THREE.AmbientLight(0x2a3550, 0.38));
 
-  var key = new THREE.DirectionalLight(0xe8f1ff, 0.85);
-  key.position.set(-18, 30, 14);
+  var key = new THREE.DirectionalLight(0xdfe9ff, 0.62);   /* 月光：冷白，偏柔 */
+  key.position.set(-16, 34, 18);
   key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
-  key.shadow.camera.left = -26; key.shadow.camera.right = 26;
-  key.shadow.camera.top = 26; key.shadow.camera.bottom = -26;
-  key.shadow.camera.far = 90;
-  key.shadow.bias = -0.0008;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -30; key.shadow.camera.right = 30;
+  key.shadow.camera.top = 30; key.shadow.camera.bottom = -30;
+  key.shadow.camera.far = 110;
+  key.shadow.radius = 3.4;                 /* 阴影边缘糊一点，接近软光 */
+  key.shadow.bias = -0.0006;
   scene.add(key);
 
-  /* 品红轮廓光：Y2K 霓虹的边缘光 */
-  var rim = new THREE.DirectionalLight(0xff7ad9, 0.35);
-  rim.position.set(16, 12, -18);
+  /* 极微弱的品红轮廓光：只在物件边缘勾一条线，不能把盘面打亮 */
+  var rim = new THREE.DirectionalLight(0xff7ad9, 0.16);
+  rim.position.set(18, 10, -20);
   scene.add(rim);
 
-  /* 棋盘下方的青色底光：盘面浮在霓虹上 */
-  var under = new THREE.PointLight(0x35c8ff, 0.9, 70);
-  under.position.set(0, -7, 6);
-  scene.add(under);
+  /* 极微弱的青色侧光：让暗部不至于死黑 */
+  var fill = new THREE.DirectionalLight(0x35c8ff, 0.12);
+  fill.position.set(14, 8, 22);
+  scene.add(fill);
 
   /* ============================================================
-     棋盘：墨黑格 × 宣纸木格 + 深木边框
+     棋盘：两张毛毡 —— 深绿毡 + 紫红毡，细格线缝在上面
+     ------------------------------------------------------------
+     参考 davesocozy 的桌面：有色的毡面、细格线、四周被光自然压暗、
+     物件落在上面有软影。所以这里不用光板，用「低饱和毡色 + 粗糙度 0.95」，
+     靠环境光与月光读出质感，格子对比压得很轻，只留缝线的暗示。
      ============================================================ */
 
   var SQ = 4;                       /* 格子边长 */
   var board = new THREE.Group();
   scene.add(board);
 
-  /* 8×8 合并网格 + 顶点色：黑曜石格 × 磨砂玻璃格，对比干脆 */
+  /* 8×8 合并网格 + 顶点色：两种毡色交替，色差很小（缝线的暗示） */
   (function buildSquares() {
     var pos = [], col = [], idx = [];
-    var dk = [0.030, 0.048, 0.095], lt = [0.72, 0.80, 0.92];
+    /* 毡的毛面不吃高光，所以颜色要直接给足，不要指望光照提亮 */
+    var dk = [0.115, 0.190, 0.150];   /* 深墨绿毡 */
+    var lt = [0.175, 0.270, 0.215];   /* 浅墨绿毡（微微亮一点点） */
     for (var f = 0; f < 8; f++) {
       for (var r = 0; r < 8; r++) {
         var x0 = (f - 4) * SQ, x1 = x0 + SQ;
@@ -93,51 +102,55 @@
     geo.setIndex(idx);
     geo.computeVertexNormals();
     var mat = new THREE.MeshStandardMaterial({
-      vertexColors: true, roughness: 0.32, metalness: 0.25
+      vertexColors: true, roughness: 0.96, metalness: 0.0
     });
     var mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     board.add(mesh);
   })();
 
-  /* 盘面霓虹网格线：Y2K 的全息投影感 */
-  var grid = new THREE.GridHelper(SQ * 8, 8, 0x59e6ff, 0x1c5a80);
-  grid.position.y = 0.035;
+  /* 格线：细、暗、几乎贴着毡面（缝线，不是发光网格） */
+  var grid = new THREE.GridHelper(SQ * 8, 8, 0x9fd8ff, 0x9fd8ff);
+  grid.position.y = 0.028;
   grid.material.transparent = true;
-  grid.material.opacity = 0.38;
+  grid.material.opacity = 0.16;
   board.add(grid);
 
-  /* 边框：Y2K 铬合金 + 底部霓虹亮边 */
+  /* 边框：紫红毡垫在下面露出一圈，像桌垫的边 */
   var frame = new THREE.Mesh(
-    new THREE.BoxGeometry(SQ * 8 + 2.4, 1.0, SQ * 8 + 2.4),
-    new THREE.MeshStandardMaterial({ color: 0x39424f, roughness: 0.28, metalness: 0.88 })
+    new THREE.BoxGeometry(SQ * 8 + 2.6, 1.1, SQ * 8 + 2.6),
+    new THREE.MeshStandardMaterial({ color: 0x4a1f3a, roughness: 0.95, metalness: 0.0 })
   );
-  frame.position.y = -0.52;
+  frame.position.y = -0.56;
   frame.receiveShadow = true;
   board.add(frame);
 
+  /* 边框上沿：一条极暗的缝线，勾出桌垫轮廓 */
   var edge = new THREE.Mesh(
-    new THREE.BoxGeometry(SQ * 8 + 0.5, 0.18, SQ * 8 + 0.5),
+    new THREE.BoxGeometry(SQ * 8 + 0.6, 0.08, SQ * 8 + 0.6),
     new THREE.MeshStandardMaterial({
-      color: 0x2ee6ff, roughness: 0.25, metalness: 0.4,
-      emissive: 0x1fb8d8, emissiveIntensity: 0.9
+      color: 0x6b2c52, roughness: 0.9, metalness: 0.0,
+      emissive: 0x3a1029, emissiveIntensity: 0.35
     })
   );
   edge.position.y = 0.02;
   board.add(edge);
 
-  /* 深夜的影子：比平时更深一点 */
+  /* 桌面落影：整盘压在夜色里的软影 */
   var shadowCatcher = new THREE.Mesh(
     new THREE.PlaneGeometry(240, 240),
-    new THREE.ShadowMaterial({ opacity: 0.4 })
+    new THREE.ShadowMaterial({ opacity: 0.55 })
   );
   shadowCatcher.rotation.x = -Math.PI / 2;
-  shadowCatcher.position.y = -1.04;
+  shadowCatcher.position.y = -1.12;
   shadowCatcher.receiveShadow = true;
   scene.add(shadowCatcher);
 
   /* ============================================================
-     深夜氛围：星空 + 月亮 + 青品双极光 + 盘面光尘
+     深夜氛围：星野 + 月亮 + 极淡极光 + 光尘 + 桌灯暖光
+     ------------------------------------------------------------
+     参考图的夜景是「深、静、少量暖光」：星光不用密，
+     极光只要一层若有若无的色雾，暖光只有一盏桌灯。
      ============================================================ */
 
   function radialTex(inner, outer, size) {
@@ -164,9 +177,9 @@
     };
   }
 
-  /* 星空（会慢慢眨眼睛） */
+  /* 星野：数量与亮度都收着，像隔着窗看夜 */
   var starTex = radialTex("rgba(235,245,255,0.95)", "rgba(235,245,255,0)", 64);
-  var starCount = 260;
+  var starCount = 170;
   var starGeo = new THREE.BufferGeometry();
   var starPos = new Float32Array(starCount * 3);
   var rndS = mulberry(4242);
@@ -177,56 +190,68 @@
   }
   starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
   var starMat = new THREE.PointsMaterial({
-    size: 1.7, map: starTex, transparent: true, opacity: 0.8,
-    blending: THREE.AdditiveBlending, depthWrite: false, color: 0xcfe2ff
+    size: 1.4, map: starTex, transparent: true, opacity: 0.5,
+    blending: THREE.AdditiveBlending, depthWrite: false, color: 0xc8dcf6
   });
   var stars = new THREE.Points(starGeo, starMat);
   scene.add(stars);
 
-  /* 月亮 + 月晕 */
+  /* 月亮 + 月晕（唯一的冷光源，柔） */
   var moon = new THREE.Mesh(
-    new THREE.PlaneGeometry(10, 10),
-    new THREE.MeshBasicMaterial({ map: radialTex("rgba(252,248,228,0.95)", "rgba(252,248,228,0)", 128), transparent: true, depthWrite: false })
+    new THREE.PlaneGeometry(9, 9),
+    new THREE.MeshBasicMaterial({ map: radialTex("rgba(248,246,232,0.90)", "rgba(248,246,232,0)", 128), transparent: true, depthWrite: false })
   );
-  moon.position.set(38, 42, -95);
+  moon.position.set(42, 44, -98);
   scene.add(moon);
   var moonGlow = new THREE.Mesh(
-    new THREE.PlaneGeometry(42, 42),
-    new THREE.MeshBasicMaterial({ map: radialTex("rgba(190,214,255,0.30)", "rgba(190,214,255,0)", 128), transparent: true, depthWrite: false })
+    new THREE.PlaneGeometry(40, 40),
+    new THREE.MeshBasicMaterial({ map: radialTex("rgba(180,206,244,0.22)", "rgba(180,206,244,0)", 128), transparent: true, depthWrite: false })
   );
-  moonGlow.position.set(38, 42, -96);
+  moonGlow.position.set(42, 44, -99);
   scene.add(moonGlow);
 
-  /* Y2K 双极光：左青右品红，斜挂夜空 */
+  /* 极淡的极光：两层很宽很浅的色雾，只给夜空一点层次 */
   var auroraC = new THREE.Mesh(
-    new THREE.PlaneGeometry(120, 34),
-    new THREE.MeshBasicMaterial({ map: radialTex("rgba(46,230,255,0.30)", "rgba(46,230,255,0)", 128), transparent: true, depthWrite: false })
+    new THREE.PlaneGeometry(140, 44),
+    new THREE.MeshBasicMaterial({ map: radialTex("rgba(40,140,180,0.16)", "rgba(40,140,180,0)", 128), transparent: true, depthWrite: false })
   );
-  auroraC.position.set(-46, 44, -105);
-  auroraC.rotation.z = 0.28;
+  auroraC.position.set(-50, 42, -108);
+  auroraC.rotation.z = 0.24;
   scene.add(auroraC);
   var auroraM = new THREE.Mesh(
-    new THREE.PlaneGeometry(130, 38),
-    new THREE.MeshBasicMaterial({ map: radialTex("rgba(255,122,217,0.24)", "rgba(255,122,217,0)", 128), transparent: true, depthWrite: false })
+    new THREE.PlaneGeometry(150, 48),
+    new THREE.MeshBasicMaterial({ map: radialTex("rgba(150,70,140,0.12)", "rgba(150,70,140,0)", 128), transparent: true, depthWrite: false })
   );
-  auroraM.position.set(30, 56, -115);
-  auroraM.rotation.z = -0.22;
+  auroraM.position.set(34, 56, -118);
+  auroraM.rotation.z = -0.2;
   scene.add(auroraM);
 
-  /* 盘面上浮动的光尘 */
+  /* 桌灯暖光：盘面左侧一小片暖黄，让毡面有被灯照到的一角 */
+  var lamp = new THREE.PointLight(0xffc98a, 0.85, 46);
+  lamp.position.set(-18, 13, 16);
+  scene.add(lamp);
+  var lampHalo = new THREE.Mesh(
+    new THREE.PlaneGeometry(46, 46),
+    new THREE.MeshBasicMaterial({ map: radialTex("rgba(255,196,128,0.13)", "rgba(255,196,128,0)", 128), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
+  );
+  lampHalo.position.set(-18, 4.6, 16);
+  lampHalo.rotation.x = -Math.PI / 2;
+  scene.add(lampHalo);
+
+  /* 盘面上浮动的光尘：少而缓，像灯下的浮屑 */
   var dustGeo = new THREE.BufferGeometry();
-  var dustCount = 90;
+  var dustCount = 60;
   var dustPos = new Float32Array(dustCount * 3);
   var rndD = mulberry(1313);
   for (var di = 0; di < dustCount; di++) {
     dustPos[di * 3]     = (rndD() - 0.5) * 44;
-    dustPos[di * 3 + 1] = 1 + rndD() * 9;
+    dustPos[di * 3 + 1] = 1 + rndD() * 8;
     dustPos[di * 3 + 2] = (rndD() - 0.5) * 44;
   }
   dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
   var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
-    size: 0.55, map: starTex, transparent: true, opacity: 0.55,
-    blending: THREE.AdditiveBlending, depthWrite: false, color: 0x7fe8ff
+    size: 0.42, map: starTex, transparent: true, opacity: 0.3,
+    blending: THREE.AdditiveBlending, depthWrite: false, color: 0xffd9a8
   }));
   scene.add(dust);
 
@@ -267,20 +292,21 @@
   ];
 
   /* 状态 → 材质（每个棋子独立材质，方便悬停高亮）
-     千禧深夜版：萌芽 = 全息青→品红渐变，生长 = 霓虹鎏金，已成 = 黑曜石 */
+     毡面桌面版：棋子要「坐在」毡上，所以是厚实的哑光质感，
+     不做塑料反光、不做自发光，只靠形状与色相区分状态。 */
   function statusMat(status) {
-    if (status === "done")
-      return new THREE.MeshStandardMaterial({ color: 0x0c0f14, roughness: 0.18, metalness: 0.6 });
-    if (status === "growing")
-      return new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.26, metalness: 0.8, emissive: 0x6b4a08, emissiveIntensity: 0.6 });
-    /* 全息材质：夜色里泛着青紫偏光 */
-    return new THREE.MeshStandardMaterial({ color: 0x9fb8ff, roughness: 0.22, metalness: 0.72, emissive: 0x1b2450, emissiveIntensity: 0.5 });
+    if (status === "done")      /* 已成：墨玉，沉、暗、只留一点润 */
+      return new THREE.MeshStandardMaterial({ color: 0x14161c, roughness: 0.55, metalness: 0.12 });
+    if (status === "growing")   /* 生长：黄铜，暖、厚、微微发亮 */
+      return new THREE.MeshStandardMaterial({ color: 0xb9862e, roughness: 0.48, metalness: 0.45 });
+    /* 萌芽：灰紫陶土，素、哑、刚捏出来还没上釉 */
+    return new THREE.MeshStandardMaterial({ color: 0x6c6a92, roughness: 0.88, metalness: 0.05 });
   }
 
   function ghostMat() {
     return new THREE.MeshStandardMaterial({
-      color: 0x67e8ff, roughness: 0.3, metalness: 0.1,
-      transparent: true, opacity: 0.20, depthWrite: false
+      color: 0x8fb4d8, roughness: 0.9, metalness: 0.0,
+      transparent: true, opacity: 0.14, depthWrite: false
     });
   }
 
@@ -308,32 +334,24 @@
     ideaPieces.push(piece);
   });
 
-  /* 未落的子：对面两排的全息剪影（半透明 + 线框，不可点） */
+  /* 未落的子：对面两排的暗色剪影（毡面版不用荧光线框，
+     改成更暗更哑的"还没上桌的子"，靠轮廓读出形状） */
   var GHOST_SLOTS = [[0, 0], [2, 0], [4, 0], [6, 0], [7, 0], [1, 1], [3, 1], [5, 1]];
   GHOST_SLOTS.forEach(function (slot, i) {
     var make = PIECES[(i * 5 + 2) % PIECES.length];
-    var gm = ghostMat();
-    var piece = make(gm);
-    /* 给全息影子加一层线框，全息感拉满 */
-    piece.children.slice().forEach(function (m) {
-      if (!m.geometry) return;
-      var wire = new THREE.Mesh(m.geometry, new THREE.MeshBasicMaterial({
-        color: 0x9df3ff, wireframe: true, transparent: true, opacity: 0.22
-      }));
-      wire.position.copy(m.position);
-      piece.add(wire);
-    });
+    var piece = make(ghostMat());
     piece.position.set((slot[0] - 3.5) * SQ, 0, (slot[1] - 3.5) * SQ);
+    piece.position.y = -0.35;          /* 微微沉进毡面：还没拿上来的子 */
     board.add(piece);
   });
 
-  /* 悬停金光圈：铺在棋子脚下 */
+  /* 悬停光圈：暗金细环，铺在棋子脚下（毡上没有光环，只有缝线） */
   var hoverRing = new THREE.Mesh(
-    new THREE.RingGeometry(1.7, 2.15, 40),
-    new THREE.MeshBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })
+    new THREE.RingGeometry(1.75, 2.05, 44),
+    new THREE.MeshBasicMaterial({ color: 0xc79a45, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })
   );
   hoverRing.rotation.x = -Math.PI / 2;
-  hoverRing.position.y = 0.05;
+  hoverRing.position.y = 0.06;
   board.add(hoverRing);
 
   /* ============================================================
@@ -428,13 +446,13 @@
     if (idleFor > 4 && !dragging) orbit.theta += dt * 0.05 * ts;
     applyCamera();
 
-    /* 深夜氛围动画：星星眨眼、月与极光面向镜头、光尘缓旋 */
-    starMat.opacity = 0.62 + 0.24 * Math.sin(uTime * 1.7) * ts;
+    /* 深夜氛围动画：星星很轻地眨眼、月与极光面向镜头、光尘缓旋 */
+    starMat.opacity = 0.40 + 0.12 * Math.sin(uTime * 1.1) * ts;
     moon.lookAt(camera.position);
     moonGlow.lookAt(camera.position);
     auroraC.lookAt(camera.position);
     auroraM.lookAt(camera.position);
-    dust.rotation.y += dt * 0.03 * ts;
+    dust.rotation.y += dt * 0.022 * ts;
 
     /* 悬停检测 */
     if (pointer.on && ideaPieces.length) {
