@@ -546,11 +546,12 @@
   }
 
   canvas.addEventListener("pointerdown", function (e) {
+    if (inPlay) return;                       /* 入局后禁用上帝视角轨道 */
     dragging = true; lastX = e.clientX; lastY = e.clientY; idleFor = 0;
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener("pointermove", function (e) {
-    if (dragging) {
+    if (dragging && !inPlay) {
       tilt.yaw += (e.clientX - lastX) * 0.0062;
       tilt.pitch = Math.min(1.05, Math.max(0.06, tilt.pitch + (e.clientY - lastY) * 0.0042));
       lastX = e.clientX; lastY = e.clientY; idleFor = 0;
@@ -563,6 +564,7 @@
   window.addEventListener("pointerup", function () { dragging = false; });
   canvas.addEventListener("pointerleave", function () { pointer.on = false; });
   canvas.addEventListener("wheel", function (e) {
+    if (inPlay) { e.preventDefault(); return; }   /* 入局后不给缩放 */
     e.preventDefault();
     camDist = Math.min(40, Math.max(16, camDist + e.deltaY * 0.02));
     camera.position.z = camDist;
@@ -591,6 +593,212 @@
     var idea = hovered.userData.idea;
     if (idea && idea.href) window.location.href = idea.href;
   });
+
+  /* ============================================================
+     游戏层：入局 / 出局 · 方向键走子 · 靠近目标弹出入口浮层
+     ------------------------------------------------------------
+     入局 = 相机平滑推到「贴在盘面旁边」的高度，同时禁用上帝视角轨道。
+     出局 = 一切恢复原样（相机、倾角、轨道都能回来）。
+     棋子用方向键一格一格走，靠 lerp 走出平滑感；
+     走到目标棋子附近（阈值内）在它头顶弹一个链接浮层 —— 必须手点。
+     ============================================================ */
+
+  /* 玩家棋子：铜色小圆盘 + 宝珠，风格与棋组一致（车床轮廓） */
+  var player = (function () {
+    var g = new THREE.Group();
+    /* 影子跟着浮动会闪，所以分两层：
+       shadowLayer 一直贴着盘面（负责投影），saucer 负责起伏（视觉） */
+    var shadowLayer = new THREE.Group();
+    var saucer = new THREE.Group();
+    g.add(shadowLayer);
+    g.add(saucer);
+
+    var mat = new THREE.MeshStandardMaterial({
+      color: 0xd9b06a, roughness: 0.26, metalness: 0.85,
+      emissive: 0x4a3208, emissiveIntensity: 0.35
+    });
+    saucer.add(lathe([
+      [0.001, 0.00], [0.92, 0.00], [0.94, 0.10], [0.90, 0.26],
+      [0.66, 0.40], [0.62, 0.58], [0.72, 0.72], [0.60, 0.86], [0.001, 0.92]
+    ], mat, 30));
+    var orb = new THREE.Mesh(new THREE.SphereGeometry(0.34, 20, 16), mat);
+    orb.position.y = 1.10; orb.castShadow = true; saucer.add(orb);
+    /* 贴地的小圆盘：专门吃阴影，位置固定不动 */
+    var plate = new THREE.Mesh(
+      new THREE.CircleGeometry(0.94, 32),
+      new THREE.ShadowMaterial({ opacity: 0.42 })
+    );
+    plate.rotation.x = -Math.PI / 2;
+    plate.position.y = 0.03;
+    plate.receiveShadow = true;
+    shadowLayer.add(plate);
+
+    /* 脚下光环：让玩家一眼找到自己 */
+    var halo = new THREE.Mesh(
+      new THREE.RingGeometry(1.0, 1.30, 40),
+      new THREE.MeshBasicMaterial({
+        color: 0xf2d382, transparent: true, opacity: 0.5,
+        side: THREE.DoubleSide, depthWrite: false
+      })
+    );
+    halo.rotation.x = -Math.PI / 2;
+    halo.position.y = 0.05;
+    shadowLayer.add(halo);
+    g.userData.halo = halo;
+    g.userData.saucer = saucer;
+    g.visible = false;
+    board.add(g);
+    return g;
+  })();
+
+  /* 玩家所在格：从某个角上起步 */
+  var pGrid = { x: 2, z: 7 };
+  var pWant = { x: 2, z: 7 };                 /* 键盘写入的目标格 */
+  var PLAY_MIN = 0, PLAY_MAX = 7;
+  var STEP = 0.16;                            /* 平滑速度（越大越快） */
+  var NEAR = SQ * 2.05;                       /* 靠近阈值：两个格子内触发 */
+
+  function gridToWorld(c) { return (c - 3.5) * SQ; }
+
+  player.position.set(gridToWorld(pGrid.x), 0, gridToWorld(pGrid.z));
+
+  /* 是否有一个目标格正在等待落地（防止一格没走完就吃掉下一键） */
+  function atTarget() {
+    return pGrid.x === pWant.x && pGrid.z === pWant.z;
+  }
+
+  var KEYS = {
+    ArrowUp:    [0, -1], ArrowDown: [0, 1],
+    ArrowLeft:  [-1, 0], ArrowRight: [1, 0],
+    KeyW: [0, -1], KeyS: [0, 1], KeyA: [-1, 0], KeyD: [1, 0]
+  };
+
+  window.addEventListener("keydown", function (e) {
+    if (!inPlay || !KEYS[e.code]) return;
+    e.preventDefault();                        /* 别让方向键把页面滚走 */
+    if (!atTarget()) return;                   /* 走完一格再走下一格 */
+    var d = KEYS[e.code];
+    pWant.x = Math.min(PLAY_MAX, Math.max(PLAY_MIN, pWant.x + d[0]));
+    pWant.z = Math.min(PLAY_MAX, Math.max(PLAY_MIN, pWant.z + d[1]));
+    lastMove = Date.now();
+  });
+
+  /* 靠近检测 → 弹浮层。浮层只有一个，跟着最近的那个目标走。 */
+  var nearPiece = null;
+  var nearPanel = document.getElementById("idea-near");
+
+  function updateNear() {
+    var best = null, bestD = NEAR;
+    for (var i = 0; i < ideaPieces.length; i++) {
+      var p = ideaPieces[i];
+      var idea = p.userData.idea;
+      if (!idea || !idea.href) continue;       /* 没链接的想法不弹浮层 */
+      var dx = p.position.x - player.position.x;
+      var dz = p.position.z - player.position.z;
+      var d = Math.sqrt(dx * dx + dz * dz);
+      if (d < bestD) { bestD = d; best = p; }
+    }
+    if (best !== nearPiece) {
+      nearPiece = best;
+      if (nearPanel) {
+        if (best) {
+          var idea = best.userData.idea;
+          nearPanel.innerHTML =
+            '<span class="idea-near-kind">' + (STATUS_ZH[idea.status] || "萌芽") + "</span>" +
+            "<b>" + escHtml(idea.title) + "</b>" +
+            "<span>" + escHtml(idea.summary || "") + "</span>" +
+            '<span class="idea-near-go">点此入册 →</span>';
+          nearPanel.href = idea.href;
+          nearPanel.setAttribute("aria-label", "进入想法：" + idea.title);
+          nearPanel.classList.add("is-on");
+        } else {
+          nearPanel.classList.remove("is-on");
+        }
+      }
+    }
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  /* ---------- 入局 / 出局：相机与状态的平滑过渡 ---------- */
+
+  var inPlay = false;
+  var camFrom = new THREE.Vector3(), camTo = new THREE.Vector3();
+  var lookFrom = new THREE.Vector3(), lookTo = new THREE.Vector3();
+  var tween = { on: false, t: 0, dur: 0.9 };
+  var lastMove = 0;
+
+  function camSnapshot() {
+    camFrom.copy(camera.position);
+    lookFrom.copy(camLook);
+  }
+
+  function cameraTargets() {
+    if (!inPlay) {
+      /* 上帝视角：回到初始机位与倾角 */
+      camTo.set(0, 3.4, camDist);
+      lookTo.set(0, 0.6, 0);
+    } else {
+      /* 入局：贴到玩家棋子斜后方，压到接近盘面的高度 */
+      var px = player.position.x, pz = player.position.z;
+      camTo.set(px - 3.4, 3.6, pz + 8.2);
+      lookTo.set(px * 0.4, 0.75, pz - 3.2);
+    }
+    tween.on = true; tween.t = 0;
+  }
+
+  var camLook = new THREE.Vector3(0, 0.6, 0);
+
+  function enterGame() {
+    if (inPlay) return;
+    inPlay = true;
+    player.visible = true;
+    pWant.x = pGrid.x; pWant.z = pGrid.z;
+    camSnapshot();
+    cameraTargets();
+    document.body.classList.add("idea-in-play");
+    var b = document.getElementById("idea-join-btn");
+    if (b) b.setAttribute("aria-pressed", "true");
+    canvas.style.cursor = "default";
+    lastMove = Date.now();
+  }
+
+  function exitGame() {
+    if (!inPlay) return;
+    inPlay = false;
+    camSnapshot();
+    cameraTargets();
+    document.body.classList.remove("idea-in-play");
+    var b = document.getElementById("idea-join-btn");
+    if (b) b.setAttribute("aria-pressed", "false");
+    canvas.style.cursor = "grab";
+    /* 浮层收掉，玩家棋子隐去 */
+    if (nearPanel) nearPanel.classList.remove("is-on");
+    nearPiece = null;
+    player.visible = false;
+    /* 上帝视角的倾角回到初始，避免歪着出去 */
+    tilt.yaw = -0.30;
+    tilt.pitch = 0.50;
+  }
+
+  (function bindGameUI() {
+    var joinBtn = document.getElementById("idea-join-btn");
+    if (joinBtn) {
+      joinBtn.addEventListener("click", function () {
+        if (inPlay) exitGame(); else enterGame();
+      });
+    }
+    var exitBtn = document.getElementById("idea-exit-btn");
+    if (exitBtn) exitBtn.addEventListener("click", exitGame);
+    /* Esc 也能出局，符合直觉 */
+    window.addEventListener("keydown", function (e) {
+      if (inPlay && e.code === "Escape") exitGame();
+    });
+  })();
 
   /* ============================================================
      主循环
@@ -639,11 +847,52 @@
     var ts = reduce ? 0 : 1;
     uTime += dt * ts;
 
-    /* 空闲时棋盘自己很慢地转（悬着的呼吸感），交互后 4 秒恢复 */
+    /* 上帝视角：空闲时棋盘自己很慢地转（悬着的呼吸感）
+       入局后不再自转（否则走动时画面会飘） */
     idleFor += dt;
-    if (idleFor > 4 && !dragging) {
+    if (!inPlay && idleFor > 4 && !dragging) {
       tilt.yaw += dt * 0.055 * ts;
       applyTilt();
+    }
+
+    /* 相机过渡（入局 / 出局 / 跟随玩家走位） */
+    if (tween.on) {
+      tween.t += dt / tween.dur;
+      var k = tween.t >= 1 ? 1 : tween.t;
+      var e = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;   /* easeInOut */
+      camera.position.lerpVectors(camFrom, camTo, e);
+      camLook.lerpVectors(lookFrom, lookTo, e);
+      camera.lookAt(camLook);
+      if (k >= 1) tween.on = false;
+    } else if (inPlay) {
+      /* 入局中：相机始终跟着玩家棋子（缓动跟随，别硬贴） */
+      var px = player.position.x, pz = player.position.z;
+      var wantX = px - 3.4, wantY = 3.6, wantZ = pz + 8.2;
+      camera.position.x += (wantX - camera.position.x) * Math.min(1, dt * 3.2);
+      camera.position.y += (wantY - camera.position.y) * Math.min(1, dt * 3.2);
+      camera.position.z += (wantZ - camera.position.z) * Math.min(1, dt * 3.2);
+      camLook.x += (px * 0.4 - camLook.x) * Math.min(1, dt * 3.6);
+      camLook.y += (0.75 - camLook.y) * Math.min(1, dt * 3.6);
+      camLook.z += (pz - 3.2 - camLook.z) * Math.min(1, dt * 3.6);
+      camera.lookAt(camLook);
+    }
+
+    /* 玩家棋子的平滑走位：朝目标格挪，走到就吸附 */
+    if (inPlay) {
+      var tx = gridToWorld(pWant.x), tz = gridToWorld(pWant.z);
+      player.position.x += (tx - player.position.x) * Math.min(1, dt / STEP * 0.28);
+      player.position.z += (tz - player.position.z) * Math.min(1, dt / STEP * 0.28);
+      if (Math.abs(tx - player.position.x) < 0.02) { player.position.x = tx; pGrid.x = pWant.x; }
+      if (Math.abs(tz - player.position.z) < 0.02) { player.position.z = tz; pGrid.z = pWant.z; }
+      /* 走动时轻微上下浮动 + 光环呼吸，看得出是个活物
+         （影子跟着浮动会闪，所以只让棋子本身上下） */
+      if (player.userData.saucer) {
+        player.userData.saucer.position.y = Math.abs(Math.sin(uTime * 6)) * 0.06 * ts;
+      }
+      var halo = player.userData.halo;
+      halo.material.opacity = 0.38 + 0.18 * Math.sin(uTime * 2.4) * ts;
+
+      updateNear();
     }
 
     /* 月与光晕面向镜头、浮尘缓旋 */
@@ -651,43 +900,60 @@
     moonGlow.lookAt(camera.position);
     dust.rotation.y += dt * 0.022 * ts;
 
-    /* 悬停检测 */
-    if (pointer.on && ideaPieces.length) {
+    /* 悬停检测：入局后只看玩家附近那一个（避免误触别的子） */
+    if (!inPlay && pointer.on && ideaPieces.length) {
       raycaster.setFromCamera({ x: pointer.x, y: pointer.y }, camera);
       var hits = raycaster.intersectObjects(ideaPieces, true);
       hovered = hits.length ? rootPiece(hits[0].object) : null;
     } else {
       hovered = null;
     }
-    canvas.style.cursor = hovered ? "pointer" : (dragging ? "grabbing" : "grab");
+    if (!inPlay) {
+      canvas.style.cursor = hovered ? "pointer" : (dragging ? "grabbing" : "grab");
+    }
 
-    /* 棋子：悬停抬起 + 鎏金呼吸 */
+    /* 棋子：悬停抬起 + 鎏金呼吸；入局后把浮层指向的那个目标也抬一抬 */
     ideaPieces.forEach(function (p) {
       var ud = p.userData;
-      var want = (hovered === p) ? 1 : 0;
+      var want = (hovered === p || (inPlay && nearPiece === p)) ? 1 : 0;
       ud.lift += (want - ud.lift) * 0.16;
       var bob = (ud.idea.status === "growing")
         ? Math.sin(uTime * 0.9 + ud.ph) * 0.12 * ts : 0;
       p.position.y = ud.baseY + ud.lift * 1.1 + bob;
     });
 
-    /* 金光圈跟随悬停棋子 */
-    if (hovered) {
-      hoverRing.position.x = hovered.position.x;
-      hoverRing.position.z = hovered.position.z;
+    /* 金光圈：入局后吸附在"最近的那个目标"上，代替鼠标悬停 */
+    var ringOn = inPlay ? nearPiece : hovered;
+    if (ringOn) {
+      hoverRing.position.x = ringOn.position.x;
+      hoverRing.position.z = ringOn.position.z;
       hoverRing.material.opacity = 0.45 + 0.2 * Math.sin(uTime * 3) * ts;
 
-      if (tip._for !== hovered) {
+      if (!inPlay && tip._for !== hovered) {
         tip._for = hovered;
         var idea = hovered.userData.idea;
         tip.textContent = idea.title + " · " + (STATUS_ZH[idea.status] || "萌芽");
         tip.classList.add("idea-tagtip--show");
       }
-      tip.style.left = pointer.px + "px";
-      tip.style.top = (pointer.py - 18) + "px";
+      if (!inPlay) {
+        tip.style.left = pointer.px + "px";
+        tip.style.top = (pointer.py - 18) + "px";
+      }
     } else {
       hoverRing.material.opacity = 0;
       if (tip._for) { tip._for = null; tip.classList.remove("idea-tagtip--show"); }
+    }
+
+    /* 靠近浮层贴着目标棋子走（世界坐标 → 屏幕坐标） */
+    if (inPlay && nearPiece && nearPanel && nearPanel.classList.contains("is-on")) {
+      var world = new THREE.Vector3();
+      nearPiece.getWorldPosition(world);
+      world.y += 3.6;                          /* 浮在棋子头顶上方 */
+      world.project(camera);
+      var w = canvas.clientWidth, h = canvas.clientHeight;
+      nearPanel.style.left = ((world.x * 0.5 + 0.5) * w) + "px";
+      nearPanel.style.top = ((-world.y * 0.5 + 0.5) * h) + "px";
+      nearPanel.style.visibility = (world.z > 1) ? "hidden" : "visible";
     }
 
     renderer.render(scene, camera);

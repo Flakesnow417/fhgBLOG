@@ -39,6 +39,20 @@
       <div class="idea-board-legend">
         <b>萌芽</b>·陶土　<b>生长</b>·黄铜　<b>已成</b>·墨玉　<b>灰子</b>·未落
       </div>
+
+      <!-- 游戏层：入局按钮（点击后换成方向键走子的提示） -->
+      <button class="idea-join" id="idea-join-btn" type="button" aria-pressed="false">
+        <span class="idea-join-on">入局</span>
+        <span class="idea-join-off">出局</span>
+      </button>
+
+      <!-- 靠近目标棋子时弹出的链接入口：绝不自动跳，必须点它 -->
+      <a class="idea-near" id="idea-near" href="#" rel="noopener"></a>
+
+      <!-- 入局后的操作提示：换成方向键说明 -->
+      <div class="idea-play-hint" aria-hidden="true">
+        方向键走子 · 靠近想法即现入口 · 点入口入册 · Esc 出局
+      </div>
     </section>
 
   </main>
