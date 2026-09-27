@@ -860,3 +860,267 @@ body.idea-board-3d .idea-grid { display: none; }
   .idea-enter { transform: translateX(-50%) !important; }
   .idea-enter::after { animation: none !important; }
 }
+
+/* ============================================================
+   夜场沉浸版（content 页 · 千禧 Y2K 深夜）
+   ------------------------------------------------------------
+   assets/night.js 把 <canvas id="idea-night"> 铺满整页当天幕，
+   文字页（想法集 / 关于 / 详情）全部浮在天幕上，四周不再有白边。
+
+   加了这个 body 类之后，上面所有「宣纸亮色」定义都被这里覆盖：
+   文字墨色 → 冷白，卡片 → 夜间玻璃，分割线 → 霓虹细线。
+   .idea-page 本身保持不动，随时可回退到宣纸版。
+   ============================================================ */
+
+body.idea-page.night-bg {
+  background: #04060f;         /* JS 未跑起来时的兜底：也是深夜色 */
+  color: #cfd8e8;
+}
+
+/* 天幕画布：固定在最后，内容全部盖在它上面 */
+.idea-page .idea-night {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+}
+
+/* 所有内容抬到天幕之上 */
+.idea-page .idea-head,
+.idea-page .idea-main,
+.idea-page .idea-foot {
+  position: relative;
+  z-index: 1;
+}
+
+/* 顶上再压一条渐隐的夜色，顶栏读字更清楚 */
+.idea-page.night-bg::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 132px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(4, 6, 15, .88), rgba(4, 6, 15, 0));
+}
+
+.idea-page.night-bg ::selection {
+  background: rgba(46, 230, 255, .28);
+}
+
+/* ---------- 布局：全屏天幕下的排版放宽 ---------- */
+
+.idea-page.night-bg .idea-main {
+  max-width: 920px;
+  padding-top: clamp(40px, 9vh, 92px);
+}
+
+.idea-page.night-bg .idea-pagehead {
+  text-align: center;
+}
+
+.idea-page.night-bg .idea-pagehead h1 {
+  color: #eaf4ff;
+  font-size: clamp(42px, 7vw, 66px);
+  text-shadow:
+    0 0 26px rgba(46, 230, 255, .34),
+    0 0 62px rgba(255, 122, 217, .18),
+    0 2px 22px rgba(0, 0, 0, .5);
+}
+
+.idea-page.night-bg .idea-lead {
+  color: rgba(168, 190, 218, .82);
+  letter-spacing: .06em;
+}
+
+/* 分割线：霓虹细线 + 中心一段亮芯 */
+.idea-page.night-bg .idea-rule {
+  height: 1px;
+  background: linear-gradient(90deg,
+    rgba(46, 230, 255, 0), rgba(46, 230, 255, .6) 22%,
+    rgba(255, 122, 217, .7) 50%,
+    rgba(46, 230, 255, .6) 78%, rgba(46, 230, 255, 0));
+  margin: 30px auto 48px;
+  max-width: 640px;
+  box-shadow: 0 0 12px rgba(46, 230, 255, .35);
+}
+
+/* ---------- 顶栏 / 页脚 ---------- */
+
+.idea-page.night-bg .idea-head {
+  border-bottom: 1px solid rgba(111, 216, 255, .16);
+  color: #e6f2ff;
+  background: linear-gradient(180deg, rgba(6, 10, 26, .72), rgba(6, 10, 26, 0));
+  backdrop-filter: blur(2px);
+}
+
+.idea-page.night-bg .idea-brand {
+  color: #eaf4ff;
+  text-shadow: 0 0 18px rgba(46, 230, 255, .45);
+}
+
+.idea-page.night-bg .idea-nav a { color: rgba(200, 218, 240, .82); }
+.idea-page.night-bg .idea-nav a:hover {
+  color: #fff;
+  text-shadow: 0 0 14px rgba(46, 230, 255, .75);
+}
+.idea-page.night-bg .idea-nav a::after {
+  background: linear-gradient(90deg, #2ee6ff, #ff7ad9);
+}
+
+.idea-page.night-bg .idea-foot {
+  border-top: 1px solid rgba(111, 216, 255, .14);
+  color: rgba(150, 178, 208, .58);
+  background: linear-gradient(0deg, rgba(4, 6, 15, .82), rgba(4, 6, 15, 0));
+}
+
+/* ---------- 棋盘：与天幕连成一体（去掉方框，只留发光边） ---------- */
+
+.idea-page.night-bg .idea-board-wrap {
+  height: min(76vh, 760px);
+  border: 1px solid rgba(46, 230, 255, .22);
+  border-radius: 4px;
+  background: transparent;         /* 让 Canvas 里的星空直接透到页面上 */
+  box-shadow:
+    0 0 0 1px rgba(46, 230, 255, .05),
+    0 0 60px -12px rgba(46, 230, 255, .30),
+    0 0 120px -30px rgba(255, 122, 217, .28);
+}
+
+/* 扫描线弱一点，别盖住星空 */
+.idea-page.night-bg .idea-board-wrap::after {
+  background: repeating-linear-gradient(0deg,
+    rgba(255, 255, 255, .022) 0 1px,
+    transparent 1px 4px);
+}
+
+.idea-page.night-bg .idea-board-legend {
+  background: rgba(4, 8, 20, .58);
+  border-color: rgba(111, 216, 255, .34);
+  color: rgba(170, 200, 226, .88);
+  backdrop-filter: blur(3px);
+}
+
+.idea-page.night-bg .idea-board-op {
+  color: rgba(126, 208, 238, .5);
+}
+
+/* ---------- 想法卡片（3D 降级时出现 · 夜版玻璃卡） ---------- */
+
+.idea-page.night-bg .idea-card {
+  background: rgba(12, 20, 44, .52);
+  border: 1px solid rgba(111, 216, 255, .24);
+  border-radius: 4px;
+  color: #cfd8e8;
+  backdrop-filter: blur(6px);
+}
+
+.idea-page.night-bg .idea-card::before {
+  background: linear-gradient(90deg,
+    rgba(46, 230, 255, .85), rgba(255, 122, 217, .5) 55%, transparent);
+}
+
+.idea-page.night-bg .idea-card:hover {
+  border-color: rgba(111, 216, 255, .6);
+  box-shadow:
+    0 0 34px -10px rgba(46, 230, 255, .5),
+    0 18px 40px -26px rgba(0, 0, 0, .9);
+}
+
+.idea-page.night-bg .idea-card h2 { color: #eaf4ff; }
+.idea-page.night-bg .idea-card p { color: rgba(174, 194, 218, .84); }
+
+.idea-page.night-bg .idea-cardmeta { color: rgba(150, 178, 208, .7); }
+.idea-page.night-bg .idea-cardmore { color: rgba(150, 178, 208, .62); }
+.idea-page.night-bg .idea-card:hover .idea-cardmore {
+  color: #8fe9ff;
+  text-shadow: 0 0 12px rgba(46, 230, 255, .6);
+}
+
+.idea-page.night-bg .idea-chip { border-color: currentColor; }
+.idea-page.night-bg .idea-chip--seed {
+  color: #ff8ad8;
+  text-shadow: 0 0 10px rgba(255, 122, 217, .5);
+}
+.idea-page.night-bg .idea-chip--growing {
+  color: #f2d382;
+  text-shadow: 0 0 10px rgba(244, 210, 116, .5);
+}
+.idea-page.night-bg .idea-chip--done {
+  color: #8fe9ff;
+  text-shadow: 0 0 10px rgba(46, 230, 255, .5);
+}
+
+/* ---------- 说明框 / 正文页 ---------- */
+
+.idea-page.night-bg .idea-hint {
+  border: 1px dashed rgba(111, 216, 255, .26);
+  color: rgba(160, 186, 214, .78);
+  background: rgba(10, 18, 40, .34);
+}
+
+.idea-page.night-bg .idea-hint code,
+.idea-page.night-bg .idea-art code {
+  color: #8fe9ff;
+  background: rgba(46, 230, 255, .10);
+}
+
+.idea-page.night-bg .idea-art {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(24px, 3.4vh, 40px) clamp(20px, 3.4vw, 40px)
+           clamp(28px, 4vh, 46px);
+  background: rgba(8, 14, 32, .52);
+  border: 1px solid rgba(111, 216, 255, .18);
+  border-radius: 4px;
+  backdrop-filter: blur(7px);
+  box-shadow: 0 24px 70px -40px rgba(0, 0, 0, .95);
+}
+
+.idea-page.night-bg .idea-art h1 {
+  color: #eaf4ff;
+  text-shadow: 0 0 24px rgba(46, 230, 255, .28);
+}
+
+.idea-page.night-bg .idea-quote {
+  border-left-color: #2ee6ff;
+  color: rgba(186, 208, 230, .88);
+  text-shadow: 0 0 18px rgba(46, 230, 255, .16);
+}
+
+.idea-page.night-bg .idea-back,
+.idea-page.night-bg .idea-meta { color: rgba(150, 178, 208, .74); }
+
+.idea-page.night-bg .idea-back:hover {
+  color: #8fe9ff;
+  text-shadow: 0 0 12px rgba(46, 230, 255, .6);
+}
+
+.idea-page.night-bg .idea-endseal { color: rgba(150, 178, 208, .7); }
+
+/* 提示牌 / 墨迹：跟着夜色走 */
+.idea-page.night-bg .idea-tagtip {
+  background: rgba(6, 10, 24, .92);
+  border-color: rgba(111, 216, 255, .4);
+  color: #d9ecff;
+}
+
+.idea-page.night-bg .idea-ink {
+  background: radial-gradient(circle at 40% 40%,
+    rgba(150, 220, 245, .34),
+    rgba(150, 220, 245, .06) 60%,
+    transparent 74%);
+}
+
+.idea-page.night-bg .idea-ink--big {
+  background: radial-gradient(circle at 45% 45%,
+    rgba(180, 232, 252, .5),
+    rgba(180, 232, 252, .18) 46%,
+    transparent 72%);
+}
+
+@media (max-width: 640px) {
+  .idea-page.night-bg .idea-board-wrap { height: 58vh; }
+  .idea-page.night-bg .idea-art { padding: 22px 18px 26px; }
+}
