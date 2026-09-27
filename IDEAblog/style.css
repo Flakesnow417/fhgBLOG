@@ -694,11 +694,25 @@ body.idea-page {
   position: relative;
   height: min(72vh, 700px);
   margin-bottom: 36px;
-  border: 1px solid rgba(28, 26, 23, .16);
+  /* 千禧深夜：天鹅绒蓝黑 + 霓虹描边 + 扫描线 */
+  border: 1px solid rgba(46, 230, 255, .30);
   border-radius: 6px;
   overflow: hidden;
-  background: radial-gradient(120% 100% at 50% 28%, #faf7ee 0%, var(--xuan) 55%, #e4ddc9 100%);
+  background: linear-gradient(180deg, #0a1230 0%, #070d1f 52%, #04060e 100%);
+  box-shadow: 0 0 0 1px rgba(46, 230, 255, .06),
+              0 18px 50px -24px rgba(10, 20, 60, .8);
   cursor: grab;
+}
+
+/* CRT 扫描线：千禧年显示器的味道 */
+.idea-board-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg,
+    rgba(255, 255, 255, .028) 0 1px,
+    transparent 1px 3px);
 }
 
 .idea-board-wrap canvas {
@@ -707,29 +721,33 @@ body.idea-page {
   height: 100%;
 }
 
-/* 图例：棋子材质 = 想法状态 */
+/* 图例：棋子材质 = 想法状态（霓虹字） */
 .idea-board-legend {
   position: absolute;
   left: 14px;
   bottom: 12px;
   padding: 6px 12px;
-  background: rgba(244, 241, 232, .85);
-  border: 1px solid rgba(28, 26, 23, .12);
+  background: rgba(7, 13, 31, .72);
+  border: 1px solid rgba(111, 216, 255, .30);
   border-radius: 3px;
-  color: var(--mo-mid);
+  color: rgba(158, 196, 220, .85);
   font-size: 12px;
   letter-spacing: .12em;
   pointer-events: none;
 }
 
-.idea-board-legend b { font-weight: 600; color: var(--mo); }
+.idea-board-legend b {
+  font-weight: 600;
+  color: #8fe9ff;
+  text-shadow: 0 0 8px rgba(46, 230, 255, .55);
+}
 
 /* 右上角操作提示 */
 .idea-board-op {
   position: absolute;
   right: 14px;
   top: 12px;
-  color: var(--mo-light);
+  color: rgba(111, 216, 255, .55);
   font-size: 12px;
   letter-spacing: .2em;
   pointer-events: none;
@@ -738,11 +756,11 @@ body.idea-page {
 /* 3D 就绪后，卡片降级区隐藏 */
 body.idea-board-3d .idea-grid { display: none; }
 
-/* 浅色页面用的提示牌变体（棋盘页） */
+/* 深夜棋盘用的提示牌变体 */
 .idea-tagtip--light {
-  background: rgba(244, 241, 232, .94);
-  border-color: rgba(28, 26, 23, .25);
-  color: var(--mo);
+  background: rgba(7, 13, 31, .92);
+  border-color: rgba(111, 216, 255, .45);
+  color: #d9ecff;
 }
 
 @media (max-width: 640px) {
