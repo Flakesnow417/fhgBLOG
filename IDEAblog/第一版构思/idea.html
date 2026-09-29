@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05060f">
+<title>3D 个人简历</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0f1f'/%3E%3Cpath d='M8 22V10l8 7 8-7v12' fill='none' stroke='%2322d3ee' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<!--
+  ══════════════════════════════════════════════════════════════
+  3D 个人简历 · 单文件版
+  · 双击本文件（file:// 方式）即可在浏览器中直接打开，无需服务器
+  · 零外部依赖：无 CDN、无字体下载、无图片请求 —— 不存在“加载失败”
+  · 3D 用纯 CSS 3D + 原生 JS 实现，兼容 Chrome / Edge / Firefox / Safari
+  · 简历内容全部集中在底部 <script> 里的 RESUME 对象，搜索「【替换】」即可修改
+  ══════════════════════════════════════════════════════════════
+-->
+<style>
+/* ========== 设计变量 ========== */
+:root{
+  --bg0:#04060f; --bg1:#0a0f1f;
+  --ink:#e8edf7; --ink2:#aab6cc; --ink3:#7c8aa5; --ink4:#55617a;
+  --cyan:#22d3ee; --pink:#f472b6; --violet:#a78bfa; --blue:#60a5fa;
+  --green:#34d399; --amber:#fbbf24;
+  --sans:"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --mono:"Cascadia Code",Consolas,"JetBrains Mono",Menlo,monospace;
+  --line:rgba(148,180,220,.16);
+  --card-bg:linear-gradient(165deg,rgba(16,24,46,.94),rgba(8,12,26,.90));
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg0);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer}
+::selection{background:rgba(34,211,238,.28)}
+
+/* ========== 星空背景（Canvas，零依赖） ========== */
+#stars{position:fixed;inset:0;z-index:0;display:block}
+
+/* ========== 3D 舞台 ========== */
+#scene{
+  position:fixed;inset:0;z-index:1;
+  perspective:1000px;perspective-origin:50% 50%;
+  overflow:hidden;touch-action:none;cursor:grab;
+}
+#scene.dragging{cursor:grabbing}
+#world{
+  position:absolute;left:50%;top:50%;width:0;height:0;
+  transform-style:preserve-3d;will-change:transform;
+}
+/* 3D 容器各自独立合成：把 6 个模块拆成独立层，避免任一模块内容变化
+   导致整个世界层被整体重新光栅化（3D 变换的层里，一次改动会连带重绘整层）。 */
+.slot{will-change:transform}
+
+/* ========== 胶片颗粒（场景氛围） ==========
+   参考项目里「胶片噪点 + 暗角」是氛围感的关键。
+   但静态噪点会显得脏，所以这里用极慢的透明度呼吸来模拟动态胶片。
+   注意：绝不能给噪点层用 filter 或大半径模糊 —— 那是纯光栅化开销。 */
+#grain{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.5;
+  background-image:
+    repeating-conic-gradient(from 0deg at 12% 8%, rgba(255,255,255,.045) 0deg .6deg, transparent .6deg 1.6deg),
+    repeating-conic-gradient(from 40deg at 78% 62%, rgba(255,255,255,.035) 0deg .5deg, transparent .5deg 1.4deg),
+    repeating-conic-gradient(from 15deg at 44% 88%, rgba(160,200,255,.03) 0deg .5deg, transparent .5deg 1.5deg);
+  animation:grainBreath 5.5s steps(6) infinite;
+}
+@keyframes grainBreath{
+  0%,100%{opacity:.34}
+  50%    {opacity:.62}
+}
+
+/* ========== 场景陈设（3D 物件：让空间像个地方，而不只是浮空的牌） ==========
+   核心变化：每个简历模块旁边配一个「可点击的立体物件」。
+   灵感来自参考项目（3D 房间/工作台，点物体 → 相机飞过去 → 开详情）。
+   物件只做「入口」，真正的长文仍然在侧栏里呈现，保证信息可读性。 */
+.prop3d{position:absolute;transform-style:preserve-3d}
+.prop3d .box{position:absolute;width:var(--pw);height:var(--ph);
+  left:calc(var(--pw) / -2);top:calc(var(--ph) / -2);
+  pointer-events:none}
+.prop3d .p-face{
+  position:absolute;inset:0;
+  border:1px solid color-mix(in srgb,var(--pc) 42%,transparent);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--pc) 14%,transparent),rgba(8,12,26,.72));
+  border-radius:6px;
+}
+.prop3d .p-face.f2{transform:translateZ(-14px)}
+/* 物件上悬浮的一行小字，静止时也可见 */
+.prop3d .p-cap{
+  position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--ph) / 2 + 10px);
+  font:600 10.5px/1 var(--mono);letter-spacing:.2em;color:var(--ink3);white-space:nowrap;
+  padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(6,10,22,.7);
+}
+.prop3d.hot .p-cap{color:var(--pc);border-color:color-mix(in srgb,var(--pc) 55%,transparent)}
+/* 地面上的光斑：确认物件「落在地上」而不是悬空 */
+.prop3d .p-pool{
+  position:absolute;left:50%;top:calc(var(--ph) / 2 + 6px);
+  width:calc(var(--pw) * 1.5);height:56px;margin-left:calc(var(--pw) * -0.75);
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--pc) 26%,transparent),transparent 72%);
+  transform:rotateX(90deg);transform-origin:top center;pointer-events:none;
+}
+/* 每个物件的造型差异：让它一眼能分辨是什么 */
+.prop3d[data-kind="monitor"] .p-face{height:74%;top:0;border-radius:8px}
+.prop3d[data-kind="monitor"] .p-face.f2{transform:translateZ(-16px)}
+.prop3d[data-kind="monitor"]::after{content:"";position:absolute;left:50%;bottom:calc(var(--ph) / -2 + 12px);
+  width:26%;height:calc(var(--ph) * .26);margin-left:-13%;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--pc) 30%,transparent),transparent);
+  border-left:1px solid color-mix(in srgb,var(--pc) 40%,transparent);
+  border-right:1px solid color-mix(in srgb,var(--pc) 40%,transparent)}
+.prop3d[data-kind="stack"] .p-face{border-radius:4px}
+.prop3d[data-kind="stack"] .p-face.f2{transform:translate3d(8px,-10px,-14px)}
+.prop3d[data-kind="orb"] .p-face{border-radius:50%}
+.prop3d[data-kind="slab"] .p-face{border-radius:3px}
+.prop3d .p-body{position:absolute;inset:0;transform:translateZ(0)}
+
+/* 地面网格 */
+#floor{
+  position:absolute;left:-2800px;top:-2800px;width:5600px;height:5600px;
+  background:
+    repeating-linear-gradient(0deg,  rgba(56,189,248,.22) 0 1px, transparent 1px 450px),
+    repeating-linear-gradient(90deg, rgba(56,189,248,.22) 0 1px, transparent 1px 450px),
+    repeating-linear-gradient(0deg,  rgba(56,189,248,.10) 0 1px, transparent 1px 90px),
+    repeating-linear-gradient(90deg, rgba(56,189,248,.10) 0 1px, transparent 1px 90px),
+    radial-gradient(closest-side, rgba(34,211,238,.05), transparent 70%);
+  -webkit-mask-image:radial-gradient(closest-side,#000 26%,transparent 74%);
+  mask-image:radial-gradient(closest-side,#000 26%,transparent 74%);
+  transform:translate3d(0,170px,-1000px) rotateX(90deg);
+  pointer-events:none;
+}
+
+/* 远景星云色块 */
+.neb{position:absolute;border-radius:50%;pointer-events:none}
+.neb-violet{width:1700px;height:1200px;left:-850px;top:-600px;transform:translate3d(-700px,-320px,-2600px);
+  background:radial-gradient(closest-side,rgba(139,92,246,.17),transparent 70%)}
+.neb-cyan{width:1500px;height:1050px;left:-750px;top:-525px;transform:translate3d(880px,-240px,-2450px);
+  background:radial-gradient(closest-side,rgba(34,211,238,.13),transparent 70%)}
+.neb-pink{width:1200px;height:900px;left:-600px;top:-450px;transform:translate3d(60px,-420px,-2500px);
+  background:radial-gradient(closest-side,rgba(244,114,182,.10),transparent 70%)}
+
+/* 漂浮微粒 */
+.dust{position:absolute;pointer-events:none}
+.dust i{
+  display:block;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,rgba(190,230,255,.95),rgba(34,211,238,.35) 60%,transparent);
+  box-shadow:0 0 10px rgba(34,211,238,.5);
+  animation:floaty 7s ease-in-out infinite alternate;
+}
+@keyframes floaty{from{transform:translateY(-12px)}to{transform:translateY(12px)}}
+
+/* 模块面板：外层 slot 负责 3D 摆位，内层 card 负责视觉 */
+.slot{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d}
+.card{
+  position:absolute;
+  left:calc(var(--w) / -2);top:calc(var(--h) / -2);
+  width:var(--w);height:var(--h);
+  background:var(--card-bg);
+  border:1px solid rgba(255,255,255,.10);
+  border-color:color-mix(in srgb,var(--pc) 38%,transparent);
+  border-radius:18px;
+  /* 精简阴影：原本 4 层（含 44px 泛光 + 90px 大投影），
+     在 3D 场景里每帧都要为 6 块面板重新合成大范围模糊，是掉帧主因之一。
+     现改为 2 层、半径显著收小，视觉几乎无损但合成开销降一个量级。 */
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.4),
+    0 18px 40px -24px rgba(0,0,0,.9);
+  padding:26px 30px;
+  display:flex;flex-direction:column;gap:12px;
+  cursor:pointer;
+  transition:box-shadow .35s ease,border-color .35s ease,transform .35s ease;
+  outline:none;
+}
+/* 泛光只给「最近的一块」面板，远处面板不参与大范围模糊合成。
+   原因：滤镜/阴影的泛光是按「盒子」光栅化的，盒子的边长随 box-shadow 半径线性增长。
+   6 块面板同时挂泛光时，仅阴影一项就要额外光栅化约 2000 万像素 —— 这是掉帧的直接来源。
+   稳态下只保留 1 块高亮，代价降到 1/6；悬停/聚焦仍即时给出反馈。 */
+.card.near.glow,.card:hover,.card:focus-visible{
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.4),
+    0 0 58px -14px var(--pcg),
+    0 22px 60px -28px rgba(0,0,0,.95);
+}
+.card::before,.card::after{ /* 霓虹拐角 */
+  content:"";position:absolute;width:22px;height:22px;pointer-events:none;
+  border:2px solid var(--pc);opacity:.85;
+}
+.card::before{left:-2px;top:-2px;border-right:0;border-bottom:0;border-radius:6px 0 0 0}
+.card::after{right:-2px;bottom:-2px;border-left:0;border-top:0;border-radius:0 0 6px 0}
+.card .beam{ /* 顶部发光线 */
+  position:absolute;left:14%;right:14%;top:-1px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--pc),transparent);
+  opacity:.6;
+}
+.card.near{
+  border-color:color-mix(in srgb,var(--pc) 75%,transparent);
+}
+/* 仅「最近」那块挂泛光，由 JS 维护 .glow */
+.card.near .p-foot .go{color:var(--pc);opacity:1}
+.card.near .beam{opacity:1}
+.card:hover{transform:translateY(-4px)}
+.p-head{display:flex;align-items:baseline;gap:12px}
+.p-idx{
+  font:700 12px/1 var(--mono);letter-spacing:.2em;color:var(--pc);
+  padding:5px 8px;border:1px solid color-mix(in srgb,var(--pc) 45%,transparent);
+  border-radius:6px;background:color-mix(in srgb,var(--pc) 10%,transparent);
+}
+.p-tag{font:600 11px/1 var(--mono);letter-spacing:.34em;color:var(--ink4)}
+.p-title{font-size:25px;font-weight:700;letter-spacing:.06em}
+.p-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;
+  font-size:13.5px;color:var(--ink2);line-height:1.75}
+.p-foot{
+  display:flex;justify-content:space-between;align-items:center;
+  font:500 11px/1 var(--mono);letter-spacing:.18em;color:var(--ink4);
+  border-top:1px solid var(--line);padding-top:12px;
+}
+.p-foot .go{opacity:.55;transition:.3s}
+.card.near .p-foot .go{opacity:1}
+.ghost{
+  position:absolute;right:16px;bottom:2px;pointer-events:none;
+  font:800 92px/1 var(--mono);letter-spacing:-.04em;
+  color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--pc) 16%,transparent);
+}
+
+/* —— 面板内部小组件 —— */
+.mini-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.mini-row:last-child{border-bottom:0}
+.mini-row b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-row span{color:var(--ink4);font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+.bar-row{display:flex;flex-direction:column;gap:6px}
+.bar-row .bt{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink2)}
+.bar-row .bt i{font-style:normal;font-family:var(--mono);color:var(--pc);font-size:11px}
+.bar{height:5px;border-radius:4px;background:rgba(148,180,220,.12);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:4px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--pc) 45%,transparent),var(--pc));
+  transition:width .9s cubic-bezier(.22,.9,.3,1)}
+.hero-face{width:74px;height:74px;border-radius:20px;display:grid;place-items:center;flex:none;
+  background:radial-gradient(circle at 32% 28%,color-mix(in srgb,var(--pc) 30%,transparent),transparent 70%),
+    rgba(10,16,32,.8);
+  border:1px solid color-mix(in srgb,var(--pc) 55%,transparent);
+  box-shadow:0 0 20px -8px var(--pcg);
+  font:800 30px/1 var(--sans);color:var(--pc)}
+.hero-name{font-size:30px;font-weight:800;letter-spacing:.1em}
+.hero-role{font:600 12px/1.6 var(--mono);letter-spacing:.22em;color:var(--pc)}
+.hero-line{color:var(--ink2);font-size:13.5px;line-height:1.8;max-width:52ch}
+.hero-stats{display:flex;gap:26px;margin-top:2px}
+.hero-stats b{display:block;font:700 24px/1.2 var(--mono);color:var(--ink)}
+.hero-stats span{font-size:11px;color:var(--ink4);letter-spacing:.14em}
+
+/* ========== 全屏滤镜：暗角 + 扫描线 + 背景氛围光 ==========
+   背景氛围交给这里的 CSS 渐变，而不是 Canvas：
+   CSS 渐变由合成器直接渲染，清晰、几乎零成本，也不会像 Canvas 那样
+   多层叠加把深色底糊成一片亮蓝。 */
+#veil{position:fixed;inset:0;z-index:2;pointer-events:none;
+  background:
+    radial-gradient(60% 42% at 18% 16%,rgba(99,102,241,.075),transparent 72%),
+    radial-gradient(52% 38% at 84% 26%,rgba(34,211,238,.055),transparent 72%),
+    radial-gradient(56% 40% at 52% 88%,rgba(139,92,246,.045),transparent 74%),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.014) 0 1px,transparent 1px 3px),
+    radial-gradient(120% 90% at 50% 46%,transparent 55%,rgba(2,4,10,.55) 100%);
+}
+
+/* ========== HUD ========== */
+/* 注意：不要在这里用 contain:size —— 它会把元素自身的尺寸当成 0，
+   导致定位/换行彻底错乱（品牌名被压成竖排）。实测 Layout 的稳态开销本就只有
+   每帧零点几毫秒（7 秒内 43 次、共 18ms），不值得为它冒布局崩坏的风险。
+   真正要防的是「文字变更引发整页重排」，那由下面这几个绘制隔离属性处理。 */
+#hud{position:fixed;inset:0;z-index:10;pointer-events:none}
+#hud .ui{pointer-events:auto}
+#brand{position:absolute;left:22px;top:18px;display:flex;align-items:center;gap:12px}
+/* paint 隔离：这几个小盒子里的数字每帧在变，隔离后不会把整个 HUD 拖进重绘 */
+#coord,#toast,#eye,#hint,#brand{contain:paint}
+#brand .logo{
+  width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+  border:1px solid rgba(34,211,238,.55);color:var(--cyan);
+  box-shadow:0 0 18px -4px rgba(34,211,238,.55),inset 0 0 14px rgba(34,211,238,.12);
+}
+#brand .logo svg{display:block}
+#brand .bt{font-weight:800;font-size:15px;letter-spacing:.14em}
+#brand .bs{font:500 10px/1.7 var(--mono);letter-spacing:.26em;color:var(--ink4)}
+
+#nav{position:absolute;right:20px;top:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:62vw}
+.chip{
+  display:inline-flex;align-items:center;gap:7px;
+  font:600 11.5px/1 var(--mono);letter-spacing:.1em;color:var(--ink3);
+  padding:9px 13px;border:1px solid var(--line);border-radius:999px;
+  background:rgba(10,16,32,.55);
+  transition:.25s;
+}
+.chip i{font-style:normal;color:var(--ink4);font-size:10px}
+.chip:hover{color:var(--ink);border-color:rgba(148,180,220,.4)}
+.chip.near{color:var(--ink);border-color:color-mix(in srgb,var(--mc) 55%,transparent)}
+.chip.on{color:#04121a;background:var(--mc);border-color:var(--mc);font-weight:700}
+.chip.on i{color:rgba(4,18,26,.6)}
+
+#hint{
+  position:absolute;left:22px;bottom:18px;
+  font:500 11px/1.9 var(--mono);letter-spacing:.14em;color:var(--ink4);
+  display:flex;gap:16px;flex-wrap:wrap;
+}
+#hint b{color:var(--ink2);font-weight:600;
+  padding:2px 7px;border:1px solid var(--line);border-radius:6px;background:rgba(10,16,32,.5)}
+#coord{
+  position:absolute;right:22px;bottom:18px;text-align:right;
+  font:500 10.5px/1.9 var(--mono);letter-spacing:.16em;color:var(--ink4);
+}
+#coord b{color:var(--cyan);font-weight:600}
+#eye{position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;
+  border-radius:50%;background:rgba(232,237,247,.92);
+  box-shadow:0 0 8px rgba(34,211,238,.85)}
+#toast{
+  position:absolute;left:50%;bottom:76px;transform:translate(-50%,14px);
+  font:600 12px/1 var(--mono);letter-spacing:.2em;color:var(--cyan);
+  padding:10px 18px;border:1px solid rgba(34,211,238,.4);border-radius:999px;
+  background:rgba(6,12,26,.8);
+  opacity:0;transition:.4s;white-space:nowrap;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* 移动端方向键 */
+#pad{position:absolute;left:16px;bottom:16px;display:none;grid-template-columns:repeat(3,52px);
+  grid-template-rows:repeat(2,52px);gap:8px}
+#pad button{
+  border:1px solid var(--line);border-radius:12px;background:rgba(10,16,32,.6);
+  color:var(--ink2);font-size:16px;touch-action:none;
+}
+#pad button:active{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 14px -4px var(--cyan)}
+#pad .u{grid-column:2;grid-row:1}
+#pad .l{grid-column:1;grid-row:2}
+#pad .d{grid-column:2;grid-row:2}
+#pad .r{grid-column:3;grid-row:2}
+
+/* ========== 详情侧栏 ========== */
+#scrim{position:fixed;inset:0;z-index:24;background:rgba(3,5,12,.52);
+  opacity:0;pointer-events:none;transition:opacity .45s}
+#scrim.open{opacity:1;pointer-events:auto}
+#detail{
+  position:fixed;top:0;right:0;bottom:0;z-index:30;width:min(520px,94vw);
+  background:linear-gradient(200deg,rgba(15,22,44,.97),rgba(7,10,22,.98));
+  border-left:1px solid color-mix(in srgb,var(--dc,#22d3ee) 40%,transparent);
+  box-shadow:-40px 0 90px rgba(0,0,0,.6);
+  transform:translateX(108%);transition:transform .55s cubic-bezier(.22,.9,.26,1);
+  display:flex;flex-direction:column;
+}
+#detail.open{transform:none;box-shadow:-40px 0 90px rgba(0,0,0,.6),0 0 80px -30px var(--dc,#22d3ee)}
+.dt-head{
+  display:flex;align-items:flex-start;gap:14px;padding:22px 22px 16px;
+  border-bottom:1px solid var(--line);position:relative;overflow:hidden;flex:none;
+}
+.dt-head::before{content:"";position:absolute;left:0;top:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--dc,#22d3ee),transparent 70%)}
+.dt-idx{font:800 34px/1 var(--mono);color:transparent;
+  -webkit-text-stroke:1px color-mix(in srgb,var(--dc,#22d3ee) 55%,transparent);margin-top:2px}
+.dt-title{font-size:21px;font-weight:800;letter-spacing:.08em}
+.dt-sub{font:500 10.5px/1.8 var(--mono);letter-spacing:.26em;color:var(--ink4);margin-top:5px}
+#dtClose{
+  margin-left:auto;width:34px;height:34px;border-radius:10px;flex:none;
+  border:1px solid var(--line);color:var(--ink2);font-size:14px;transition:.25s;
+}
+#dtClose:hover{border-color:var(--dc,#22d3ee);color:var(--dc,#22d3ee);box-shadow:0 0 14px -5px var(--dc,#22d3ee)}
+.dt-body{flex:1;overflow-y:auto;padding:20px 22px 34px;user-select:text}
+.dt-body::-webkit-scrollbar{width:8px}
+.dt-body::-webkit-scrollbar{width:8px}
+.dt-body::-webkit-scrollbar-thumb{background:rgba(148,180,220,.18);border-radius:8px}
+.dt-sec{margin-bottom:22px}
+.dt-sec > h4{
+  font:700 11px/1 var(--mono);letter-spacing:.3em;color:var(--ink4);
+  margin-bottom:12px;display:flex;align-items:center;gap:10px;
+}
+.dt-sec > h4::after{content:"";flex:1;height:1px;background:var(--line)}
+.dt-sec > h4::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--dc,#22d3ee);
+  box-shadow:0 0 8px var(--dc,#22d3ee)}
+.tagwrap{display:flex;flex-wrap:wrap;gap:8px}
+.tag{font:500 11.5px/1 var(--mono);color:var(--ink2);padding:7px 11px;border-radius:999px;
+  border:1px solid var(--line);background:rgba(10,16,32,.5)}
+.proj{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;
+  background:rgba(10,16,32,.45)}
+.proj .ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.proj .ph b{font-size:15px}
+.proj .ph span{font-family:var(--mono);font-size:10.5px;color:var(--ink4);letter-spacing:.08em}
+.proj .pr{font:600 11px/1 var(--mono);color:var(--dc,#22d3ee);letter-spacing:.14em;margin:7px 0 8px}
+.proj p{font-size:12.8px;color:var(--ink2);line-height:1.8}
+.proj ul{margin:9px 0 0 16px;color:var(--ink3);font-size:12.3px;line-height:1.9}
+.proj .stack{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.proj .stack em{font:500 10.5px/1 var(--mono);font-style:normal;color:var(--ink3);
+  border:1px solid var(--line);border-radius:6px;padding:4px 7px}
+.tl{border-left:1px solid var(--line);margin-left:6px;padding-left:18px}
+.tl .ti{position:relative;padding-bottom:18px}
+.tl .ti::before{content:"";position:absolute;left:-22.5px;top:5px;width:8px;height:8px;border-radius:50%;
+  background:var(--dc,#22d3ee);box-shadow:0 0 10px var(--dc,#22d3ee)}
+.tl .ti b{font-size:14.5px}
+.tl .ti .tr{font:600 11px/1 var(--mono);color:var(--dc,#22d3ee);letter-spacing:.1em;margin:5px 0 6px}
+.tl .ti p{font-size:12.6px;color:var(--ink2);line-height:1.8}
+.ct-row{display:flex;align-items:center;gap:13px;padding:13px 4px;border-bottom:1px dashed var(--line)}
+.ct-row:last-child{border-bottom:0}
+.ct-row svg{flex:none;width:19px;height:19px;stroke:var(--dc,#22d3ee);fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.ct-row .ck{font:600 10px/1 var(--mono);letter-spacing:.24em;color:var(--ink4);width:52px;flex:none}
+.ct-row .cv{font-size:13.5px;color:var(--ink);word-break:break-all}
+.ct-row a{color:var(--ink);text-decoration:none;border-bottom:1px dashed color-mix(in srgb,var(--dc,#22d3ee) 55%,transparent)}
+.stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat3 div{border:1px solid var(--line);border-radius:12px;padding:13px 6px;text-align:center;
+  background:rgba(10,16,32,.45)}
+.stat3 b{display:block;font:700 20px/1.3 var(--mono);color:var(--dc,#22d3ee)}
+.stat3 span{font-size:10.5px;color:var(--ink4);letter-spacing:.12em}
+.bio{font-size:13.2px;color:var(--ink2);line-height:2}
+
+/* ========== 加载 / 进入 ========== */
+#loader{
+  position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:radial-gradient(120% 100% at 50% 30%,#0a1024 0%,#04060f 70%);
+  transition:opacity .7s ease;
+}
+#loader.done{opacity:0;pointer-events:none}
+.ld-box{width:min(400px,84vw);text-align:center}
+.ld-logo{font:800 30px/1 var(--sans);letter-spacing:.3em;color:var(--ink)}
+.ld-logo em{font-style:normal;color:var(--cyan)}
+.ld-sub{font:500 10.5px/1 var(--mono);letter-spacing:.52em;color:var(--ink4);margin:14px 0 34px}
+.ld-bar{height:3px;border-radius:3px;background:rgba(148,180,220,.14);overflow:hidden}
+.ld-bar i{display:block;height:100%;width:0;border-radius:3px;
+  background:linear-gradient(90deg,#0ea5b7,var(--cyan),#a5f3fc)}
+.ld-meta{display:flex;justify-content:space-between;margin-top:12px;
+  font:500 10.5px/1 var(--mono);letter-spacing:.2em;color:var(--ink4)}
+#ldPct{color:var(--cyan)}
+#enterBtn{
+  margin-top:34px;padding:14px 42px;border-radius:999px;
+  border:1px solid rgba(34,211,238,.6);color:var(--cyan);
+  font:700 14px/1 var(--sans);letter-spacing:.3em;text-indent:.3em;
+  background:rgba(8,20,36,.6);
+  opacity:0;transform:translateY(8px);transition:.5s;pointer-events:none;
+}
+#enterBtn.show{opacity:1;transform:none;pointer-events:auto}
+#enterBtn:hover{background:rgba(34,211,238,.14);box-shadow:0 0 34px -6px rgba(34,211,238,.7)}
+.ld-tip{margin-top:22px;font:500 10.5px/1.9 var(--mono);letter-spacing:.18em;color:var(--ink4)}
+
+/* ========== 降级模式（不支持 CSS 3D 的老浏览器） ========== */
+#fatal,#fallback{display:none}
+.no3d #scene,.no3d #stars,.no3d #veil,.no3d #pad{display:none}
+.no3d #fallback{
+  display:block;position:fixed;inset:0;z-index:5;overflow-y:auto;
+  background:var(--bg0);padding:56px 20px 80px;user-select:text;
+}
+.no3d #hint,.no3d #coord,.no3d #eye{display:none}
+.fb-wrap{max-width:760px;margin:0 auto}
+.fb-note{font:500 11px/1.9 var(--mono);color:var(--amber);border:1px dashed rgba(251,191,36,.5);
+  border-radius:10px;padding:12px 16px;margin-bottom:30px;letter-spacing:.06em}
+.fb-sec{margin-bottom:38px}
+.fb-sec h3{font-size:19px;letter-spacing:.1em;color:var(--cyan);margin-bottom:14px;
+  text-shadow:0 0 18px rgba(34,211,238,.4)}
+.fb-sec .dt-body{padding:0;height:auto;overflow:visible}
+#fatal{
+  position:fixed;inset:0;z-index:60;place-items:center;background:var(--bg0);
+  color:var(--ink2);font:500 13px/2 var(--mono);text-align:center;padding:30px;
+}
+#fatal b{color:var(--pink)}
+
+/* ========== 移动端适配 ========== */
+@media (max-width:760px){
+  #brand .bs{display:none}
+  #nav{left:14px;right:14px;top:64px;max-width:none;justify-content:flex-start;
+    flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+  #nav::-webkit-scrollbar{display:none}
+  .chip{flex:none}
+  #hint{display:none}
+  #coord{right:14px;bottom:12px}
+  #pad{display:grid}
+  .card{padding:18px 18px}
+  .p-title{font-size:20px}
+  .hero-name{font-size:24px}
+  .ghost{font-size:64px}
+}
+/* 键盘可访问性 */
+.card:focus-visible{border-color:var(--pc)}
+.chip:focus-visible,#enterBtn:focus-visible,#dtClose:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+/* 减少动态效果 */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important}
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars" aria-hidden="true"></canvas>
+<div id="grain" aria-hidden="true"></div>
+
+<!-- 3D 舞台：#world 由 JS 填充 6 个模块面板 -->
+<div id="scene" aria-label="3D 简历空间">
+  <div id="world">
+    <div id="floor" aria-hidden="true"></div>
+    <div class="neb neb-violet" aria-hidden="true"></div>
+    <div class="neb neb-cyan" aria-hidden="true"></div>
+    <div class="neb neb-pink" aria-hidden="true"></div>
+  </div>
+</div>
+
+<div id="veil" aria-hidden="true"></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="brand" class="ui">
+    <span class="logo" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path d="M5 17V7l7 6 7-6v10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <div>
+      <div class="bt" id="brandName">3D RESUME</div>
+      <div class="bs">INTERACTIVE SPACE · V1.0</div>
+    </div>
+  </div>
+
+  <nav id="nav" class="ui" aria-label="模块导航"></nav>
+
+  <div id="hint">
+    <span><b>W A S D</b> 移动</span>
+    <span><b>拖拽</b> 环视</span>
+    <span><b>滚轮</b> 前进 / 后退</span>
+    <span><b>1 - 6</b> 跳转模块</span>
+    <span><b>E</b> 查看详情</span>
+  </div>
+
+  <div id="coord" aria-hidden="true">POS <b id="xyz">X+0000 Y+0000 Z+0000</b><br>HEADING <b id="hdg">000°</b> · FPS <b id="fps">60</b></div>
+
+  <div id="eye" aria-hidden="true"></div>
+  <div id="toast" role="status"></div>
+
+  <div id="pad" class="ui" aria-label="移动方向键">
+    <button class="u" data-k="w" aria-label="前进">▲</button>
+    <button class="l" data-k="a" aria-label="左移">◀</button>
+    <button class="d" data-k="s" aria-label="后退">▼</button>
+    <button class="r" data-k="d" aria-label="右移">▶</button>
+  </div>
+</div>
+
+<!-- 详情侧栏 -->
+<div id="scrim"></div>
+<aside id="detail" aria-hidden="true" aria-label="模块详情">
+  <div class="dt-head">
+    <span class="dt-idx" id="dtIdx">01</span>
+    <div>
+      <h3 class="dt-title" id="dtTitle">—</h3>
+      <p class="dt-sub" id="dtSub">—</p>
+    </div>
+    <button id="dtClose" aria-label="关闭详情">✕</button>
+  </div>
+  <div class="dt-body" id="dtBody"></div>
+</aside>
+
+<!-- 降级模式（浏览器不支持 CSS 3D 时自动启用） -->
+<div id="fallback"><div class="fb-wrap" id="fbWrap"></div></div>
+<div id="fatal"></div>
+
+<noscript>
+  <div style="position:fixed;inset:0;z-index:99;background:#04060f;color:#e8edf7;display:grid;place-items:center;font-family:sans-serif;text-align:center;padding:30px">
+    本页面需要启用 JavaScript 才能渲染 3D 简历空间。
+  </div>
+</noscript>
+
+<!-- 加载动画 -->
+<div id="loader">
+  <div class="ld-box">
+    <div class="ld-logo">NEO<em>·</em>CV <em>3D</em></div>
+    <div class="ld-sub">PERSONAL RESUME SPACE</div>
+    <div class="ld-bar"><i id="ldFill"></i></div>
+    <div class="ld-meta"><span id="ldTip">正在初始化 3D 空间…</span><span id="ldPct">0%</span></div>
+    <button id="enterBtn">进入空间 ENTER</button>
+    <div class="ld-tip" id="ldTip2">鼠标拖拽环视 · WASD 移动 · 点击模块查看详情</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════
+   ★★★ 简历内容 · 全部在这里改 ★★★
+   RESUME 是整站唯一数据源：3D 面板、右侧详情、降级模式都从这里渲染。
+   在本文件里搜索「【替换】」可以快速定位所有要改的地方。
+   ══════════════════════════════════════════════════════════════ */
+var RESUME = {
+
+  /* —— 01 个人简介 —— */
+  profile: {
+    /* 【替换】你的名字（面板大标题 & 浏览器标签页） */
+    name: "林深",
+    /* 【替换】职位头衔 */
+    role: "全栈开发工程师 · 创意开发者",
+    /* 【替换】一句话介绍（首屏面板上显示） */
+    line: "把复杂的问题做成简单优雅的东西 —— 网站、工具与可视化实验。",
+    /* 【替换】详细自我介绍（详情页显示，可多写几行） */
+    bio: [
+      "5 年全栈开发经验，长期负责从 0 到 1 的产品搭建，习惯把业务问题翻译成清晰的技术方案。",
+      "关注工程效率与用户体验的平衡：写得了底层组件，也调得了像素级动效。业余折腾 3D 可视化、生成艺术与本页面上方这片星空。"
+    ],
+    /* 【替换】三个关键数字 */
+    stats: [
+      { v: "5+",  k: "年经验" },
+      { v: "20+", k: "项目数" },
+      { v: "10w+", k: "服务用户" }
+    ],
+    /* 【替换】所在城市 / 状态 */
+    location: "杭州 · 中国"
+  },
+
+  /* —— 02 技能 —— */
+  skills: {
+    /* 【替换】技能分组与熟练度（level 为 0-100 的数字） */
+    groups: [
+      { title: "前端开发", items: [
+        { name: "JavaScript / TypeScript", level: 92 },
+        { name: "Vue / React",             level: 88 },
+        { name: "CSS 动画 · 3D / WebGL",   level: 82 }
+      ]},
+      { title: "后端与数据", items: [
+        { name: "Node.js",          level: 86 },
+        { name: "Python",           level: 78 },
+        { name: "MySQL / Redis",    level: 80 }
+      ]},
+      { title: "工程与协作", items: [
+        { name: "Git / CI-CD",      level: 85 },
+        { name: "Docker",           level: 72 },
+        { name: "性能优化",         level: 84 }
+      ]}
+    ],
+    /* 【替换】标签云 */
+    tags: ["Three.js","GSAP","Vite","Electron","小程序","Figma","Linux","Nginx"]
+  },
+
+  /* —— 03 项目经历 —— */
+  projects: [
+    /* 【替换】项目一：名称 / 周期 / 角色 / 技术栈 / 描述 / 亮点 */
+    { name: "星图可视化平台", period: "2024.03 - 至今", role: "前端负责人",
+      desc: "面向天文爱好者的三维星图与观测规划工具，支持百万级星点实时渲染与轨迹推演。",
+      points: ["自研 WebGL 渲染管线，百万星点 60fps 流畅交互","接入多家观测站数据，预约转化率提升 40%"],
+      stack: ["Three.js","WebGL","TypeScript","Vite"] },
+    /* 【替换】项目二 */
+    { name: "低代码搭建系统", period: "2022.06 - 2024.02", role: "核心开发",
+      desc: "可视化拖拽搭建中后台页面，覆盖公司内部 30+ 条业务线，累计搭建页面 4000+。",
+      points: ["设计物料协议与沙箱渲染方案，物料接入成本降低 70%","出码引擎支持导出可维护的 Vue3 源码"],
+      stack: ["Vue3","Node.js","Canvas"] },
+    /* 【替换】项目三 */
+    { name: "桌面效率工具箱", period: "2021.05 - 2022.05", role: "独立开发",
+      desc: "集剪贴板历史、窗口管理、快速启动于一体的桌面应用，GitHub 收获 1.2k Star。",
+      points: ["Electron + 原生模块，冷启动小于 800ms","插件市场支持社区贡献"],
+      stack: ["Electron","Rust","SQLite"] }
+  ],
+
+  /* —— 04 工作经历 —— */
+  work: [
+    /* 【替换】工作经历一 */
+    { company: "某互联网科技公司", role: "高级前端工程师", period: "2022.07 - 至今",
+      desc: "负责核心业务线前端架构与性能治理，主导低代码平台建设，推动团队工程化规范落地。" },
+    /* 【替换】工作经历二 */
+    { company: "某软件服务有限公司", role: "前端工程师", period: "2020.07 - 2022.06",
+      desc: "参与多个 ToB SaaS 项目交付，负责数据可视化大屏与组件库维护。" },
+    /* 【替换】工作经历三（可删除或继续往后加） */
+    { company: "某创业团队", role: "全栈实习生", period: "2019.07 - 2020.05",
+      desc: "从 0 搭建小程序与运营后台，独立完成首个上线项目。" }
+  ],
+
+  /* —— 05 教育背景 —— */
+  education: [
+    /* 【替换】学校 / 专业 / 学历 / 时间 / 补充 */
+    { school: "某大学", major: "计算机科学与技术", degree: "本科", period: "2016.09 - 2020.06",
+      note: "主修数据结构、操作系统、计算机网络；获校级奖学金两次，ACM 校赛二等奖。" }
+  ],
+
+  /* —— 06 联系方式 —— */
+  contact: [
+    /* 【替换】每一行 { 类型, 展示值, 链接(可留空字符串) } */
+    { k: "EMAIL",    v: "hello@example.com",        link: "mailto:hello@example.com" },
+    { k: "PHONE",    v: "+86 138-0000-0000",        link: "" },
+    { k: "GITHUB",   v: "github.com/yourname",      link: "https://github.com/yourname" },
+    { k: "WEBSITE",  v: "your.site",                link: "https://your.site" },
+    { k: "WECHAT",   v: "your-wechat-id",           link: "" },
+    { k: "LOCATION", v: "杭州 · 中国（可远程）",     link: "" }
+  ]
+};
+
+/* ══════════════════════════════════════════════════════════════
+   以下为引擎与交互代码，一般不需要改动
+   ══════════════════════════════════════════════════════════════ */
+function $(s,c){ return (c||document).querySelector(s); }
+function $$(s,c){ return Array.prototype.slice.call((c||document).querySelectorAll(s)); }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function rad(d){ return d*Math.PI/180; }
+function deg(r){ return r*180/Math.PI; }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function easeIO(t){ return t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+function mod(v,m){ return ((v%m)+m)%m; }
+/* 强制整数：避免 text-shadow / 60fps 高频拼字符串反复触发 CSS 解析 */
+function i2(v){ return Math.round(v)+"px"; }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+function fmtN(n){ var s="0000"+Math.abs(Math.round(n)); return (n<0?"-":"+")+s.slice(-4); }
+
+/* —— 模块在 3D 空间中的摆位 —— */
+var MODULES = [
+  { key:"profile",   tag:"PROFILE",   cn:"个人简介", x:0,    y:-30, z:-460,  ry:0,   w:720, h:470, c:"#22d3ee" },
+  { key:"skills",    tag:"SKILLS",    cn:"技能",     x:-700, y:-10, z:-1080, ry:38,  w:600, h:400, c:"#f472b6" },
+  { key:"projects",  tag:"PROJECTS",  cn:"项目经历", x:700,  y:-10, z:-1080, ry:-38, w:600, h:400, c:"#a78bfa" },
+  { key:"work",      tag:"WORK",      cn:"工作经历", x:-620, y:-20, z:-1720, ry:26,  w:600, h:400, c:"#fbbf24" },
+  { key:"education", tag:"EDUCATION", cn:"教育背景", x:620,  y:-20, z:-1720, ry:-26, w:600, h:400, c:"#34d399" },
+  { key:"contact",   tag:"CONTACT",   cn:"联系方式", x:0,    y:-30, z:-2280, ry:0,   w:640, h:420, c:"#60a5fa" }
+];
+var VIEW_DIST = 430, EYE = 0;
+
+/* —— 面板 teaser（3D 空间里看到的内容） —— */
+function teaserHTML(m){
+  var R = RESUME, k = m.key, h = "";
+  if (k==="profile"){
+    var initial = esc(R.profile.name.charAt(0));
+    h += '<div style="display:flex;gap:16px;align-items:center">'
+       + '<span class="hero-face" aria-hidden="true">'+initial+'</span>'
+       + '<div><div class="hero-name">'+esc(R.profile.name)+'</div>'
+       + '<div class="hero-role">'+esc(R.profile.role)+'</div></div></div>'
+       + '<p class="hero-line">'+esc(R.profile.line)+'</p>'
+       + '<div class="hero-stats">'+ R.profile.stats.map(function(s){
+            return '<div><b>'+esc(s.v)+'</b><span>'+esc(s.k)+'</span></div>'; }).join("") +'</div>';
+  } else if (k==="skills"){
+    var g0 = R.skills.groups[0].items.slice(0,3);
+    h += g0.map(function(it){
+      return '<div class="bar-row"><div class="bt"><span>'+esc(it.name)+'</span><i>'+it.level+'%</i></div>'
+           + '<div class="bar"><i data-v="'+it.level+'"></i></div></div>'; }).join("")
+      + '<p style="color:var(--ink4);font-size:12px">+ '+R.skills.groups.length+' 组技能 · 点击查看完整清单</p>';
+  } else if (k==="projects"){
+    h += R.projects.slice(0,2).map(function(p){
+      return '<div class="mini-row"><b>'+esc(p.name)+'</b><span>'+esc(p.period)+'</span></div>'; }).join("")
+      + '<p style="color:var(--ink4);font-size:12px">+ 共 '+R.projects.length+' 个项目 · 点击查看细节与亮点</p>';
+  } else if (k==="work"){
+    h += R.work.slice(0,2).map(function(w){
+      return '<div class="mini-row"><b>'+esc(w.company)+'</b><span>'+esc(w.period)+'</span></div>'; }).join("")
+      + '<p style="color:var(--ink4);font-size:12px">+ 共 '+R.work.length+' 段经历 · 点击查看职责与成果</p>';
+  } else if (k==="education"){
+    h += R.education.map(function(e2){
+      return '<div class="mini-row"><b>'+esc(e2.school)+'</b><span>'+esc(e2.period)+'</span></div>'
+           + '<div class="mini-row"><b>'+esc(e2.major)+' · '+esc(e2.degree)+'</b><span>EDU</span></div>'; }).join("");
+  } else if (k==="contact"){
+    h += R.contact.slice(0,3).map(function(c2){
+      return '<div class="mini-row"><b>'+esc(c2.v)+'</b><span>'+esc(c2.k)+'</span></div>'; }).join("")
+      + '<p style="color:var(--ink4);font-size:12px">+ 共 '+R.contact.length+' 项 · 点击查看全部联系方式</p>';
+  }
+  return h;
+}
+
+/* —— 详情页内容 —— */
+function detailHTML(m){
+  var R = RESUME, k = m.key, h = "";
+  function sec(title, inner){ return '<div class="dt-sec"><h4>'+title+'</h4>'+inner+'</div>'; }
+  if (k==="profile"){
+    h += sec("关于我", R.profile.bio.map(function(p){ return '<p class="bio" style="margin-bottom:10px">'+esc(p)+'</p>'; }).join(""));
+    h += sec("关键数据", '<div class="stat3">'+R.profile.stats.map(function(s){
+      return '<div><b>'+esc(s.v)+'</b><span>'+esc(s.k)+'</span></div>'; }).join("")+'</div>');
+    h += sec("基本信息", '<div class="tagwrap">'
+      + '<span class="tag">'+esc(R.profile.location)+'</span>'
+      + '<span class="tag">'+esc(R.profile.role)+'</span>'
+      + '<span class="tag">求职中 / 可聊</span></div>'); /* 【替换】求职状态 */
+  } else if (k==="skills"){
+    h += R.skills.groups.map(function(g){
+      return sec(esc(g.title), g.items.map(function(it){
+        return '<div class="bar-row" style="margin-bottom:12px"><div class="bt"><span>'+esc(it.name)+'</span><i>'+it.level+'%</i></div>'
+             + '<div class="bar"><i data-v="'+it.level+'"></i></div></div>'; }).join(""));
+    }).join("");
+    h += sec("工具与标签", '<div class="tagwrap">'+R.skills.tags.map(function(t){
+      return '<span class="tag">'+esc(t)+'</span>'; }).join("")+'</div>');
+  } else if (k==="projects"){
+    h += R.projects.map(function(p){
+      return '<div class="proj"><div class="ph"><b>'+esc(p.name)+'</b><span>'+esc(p.period)+'</span></div>'
+        + '<div class="pr">'+esc(p.role)+'</div><p>'+esc(p.desc)+'</p>'
+        + '<ul>'+p.points.map(function(pt){ return '<li>'+esc(pt)+'</li>'; }).join("")+'</ul>'
+        + '<div class="stack">'+p.stack.map(function(s){ return '<em>'+esc(s)+'</em>'; }).join("")+'</div></div>';
+    }).join("");
+  } else if (k==="work"){
+    h += '<div class="tl">'+R.work.map(function(w){
+      return '<div class="ti"><b>'+esc(w.company)+'</b><div class="tr">'+esc(w.role)+' · '+esc(w.period)+'</div>'
+           + '<p>'+esc(w.desc)+'</p></div>'; }).join("")+'</div>';
+  } else if (k==="education"){
+    h += R.education.map(function(e2){
+      return '<div class="proj"><div class="ph"><b>'+esc(e2.school)+'</b><span>'+esc(e2.period)+'</span></div>'
+        + '<div class="pr">'+esc(e2.major)+' · '+esc(e2.degree)+'</div><p>'+esc(e2.note)+'</p></div>'; }).join("");
+  } else if (k==="contact"){
+    h += '<div>' + R.contact.map(function(c2){
+      var icon = {
+        EMAIL:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+        PHONE:'<svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.6 2z"/></svg>',
+        GITHUB:'<svg viewBox="0 0 24 24"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>',
+        WEBSITE:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/></svg>',
+        WECHAT:'<svg viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L3 21z"/></svg>',
+        LOCATION:'<svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>'
+      }[c2.k] || '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>';
+      var val = c2.link ? '<a href="'+esc(c2.link)+'">'+esc(c2.v)+'</a>' : '<span class="cv">'+esc(c2.v)+'</span>';
+      return '<div class="ct-row">'+icon+'<span class="ck">'+esc(c2.k)+'</span><span class="cv">'+val+'</span></div>';
+    }).join("") + '</div>';
+    h += sec("备注", '<p class="bio">以上链接与账号均为占位内容，替换 RESUME.contact 后自动更新。</p>');
+  }
+  return h;
+}
+
+/* —— 降级模式（无 CSS 3D 时） —— */
+function buildFallback(){
+  var wrap = $("#fbWrap");
+  var secs = [
+    ["01 · 个人简介", detailHTML(MODULES[0])],
+    ["02 · 技能", detailHTML(MODULES[1])],
+    ["03 · 项目经历", detailHTML(MODULES[2])],
+    ["04 · 工作经历", detailHTML(MODULES[3])],
+    ["05 · 教育背景", detailHTML(MODULES[4])],
+    ["06 · 联系方式", detailHTML(MODULES[5])]
+  ];
+  wrap.innerHTML = '<div class="fb-note">提示：当前浏览器不支持 CSS 3D 效果，已自动切换为普通图文模式。'
+    + '换用新版 Chrome / Edge / Firefox / Safari 可体验完整 3D 空间。</div>'
+    + secs.map(function(s){ return '<div class="fb-sec"><h3>'+s[0]+'</h3><div class="dt-body">'+s[1]+'</div></div>'; }).join("");
+}
+
+/* —— 3D 能力检测 —— */
+var OK3D = false;
+try {
+  OK3D = window.CSS && CSS.supports &&
+         CSS.supports("transform-style","preserve-3d") &&
+         CSS.supports("perspective","1px");
+} catch(e){ OK3D = false; }
+
+/* —— URL 参数（调试 / 深链用） —— */
+var Q = {};
+location.search.replace(/^\?/,"").split("&").forEach(function(kv){
+  if(!kv) return; var p = kv.split("=");
+  Q[decodeURIComponent(p[0])] = decodeURIComponent(p[1]||"");
+});
+
+/* —— 相机状态 —— */
+var cam = { x:0, y:0, z:340, yaw:0, pitch:0 };
+var keys = {};
+var tween = null;           /* {t0,dur,from,to,open} */
+var world = $("#world"), scene = $("#scene");
+var detailEl = $("#detail"), scrim = $("#scrim");
+var openIdx = -1;
+var entered = false;
+var REDUCE = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* 物件元素缓存：必须在 buildProps 之前声明，否则 buildProps 里赋值会抛
+   ReferenceError（var 提升但值为 undefined），循环会在第二次迭代崩掉，
+   表现为「只生成了第一个物件」。 */
+var propEls = [];
+
+/* —— 构建 HUD 导航 —— */
+(function buildNav(){
+  var nav = $("#nav");
+  nav.innerHTML = MODULES.map(function(m,i){
+    return '<button class="chip" data-i="'+i+'" style="--mc:'+m.c+'">'
+         + '<i>0'+(i+1)+'</i>'+esc(m.cn)+'</button>';
+  }).join("");
+  $$("#nav .chip").forEach(function(ch){
+    ch.addEventListener("click", function(){
+      var i = +ch.getAttribute("data-i");
+      if (openIdx === i) { closeDetail(); return; }
+      focusModule(i);
+    });
+  });
+})();
+
+/* —— 构建 6 个 3D 面板 —— */
+(function buildPanels(){
+  var frag = document.createDocumentFragment();
+  MODULES.forEach(function(m,i){
+    var slot = document.createElement("div");
+    slot.className = "slot";
+    slot.setAttribute("aria-hidden","false");
+    var a = m.ry;
+    slot.style.transform = "translate3d("+m.x+"px,"+m.y+"px,"+m.z+"px) rotateY("+a+"deg)";
+    var card = document.createElement("article");
+    card.className = "card";
+    card.setAttribute("data-i", i);
+    card.setAttribute("tabindex","0");
+    card.setAttribute("aria-label", m.cn);
+    card.style.setProperty("--w", m.w+"px");
+    card.style.setProperty("--h", m.h+"px");
+    card.style.setProperty("--pc", m.c);
+    card.style.setProperty("--pcg", "rgba(148,180,220,.35)");
+    card.innerHTML =
+        '<span class="beam" aria-hidden="true"></span>'
+      + '<div class="p-head"><span class="p-idx">0'+(i+1)+'</span><span class="p-tag">'+m.tag+'</span></div>'
+      + '<h2 class="p-title">'+esc(m.cn)+'</h2>'
+      + '<div class="p-body">'+teaserHTML(m)+'</div>'
+      + '<div class="p-foot"><span>MODULE 0'+(i+1)+' / 0'+MODULES.length+'</span>'
+      + '<span class="go">点击查看详情 →</span></div>'
+      + '<span class="ghost" aria-hidden="true">0'+(i+1)+'</span>';
+    slot.appendChild(card);
+    frag.appendChild(slot);
+  });
+  world.appendChild(frag);
+})();
+
+/* —— 面板发光色 —— */
+MODULES.forEach(function(m,i){
+  /* 用一个小技巧把 hex 色转 rgba 光晕 */
+  var c = m.c;
+  var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
+  m.glow = "rgba("+r+","+g+","+b+",.55)";
+  var card = $$('.card[data-i="'+i+'"]')[0];
+  if (card) card.style.setProperty("--pcg", m.glow);
+});
+
+/* —— 构建场景陈设：每个模块配一个可点击的 3D 物件 ——
+   参考「3D 房间/工作台」思路：点物体 → 相机飞过去 → 开详情。
+   物件摆在面板靠通道内侧的一角，朝向来客，并在地面投一块光斑，
+   这样空间有「地方感」，而不是六块牌子悬在空中。 */
+(function buildProps(){
+  var KIND = ["monitor","stack","orb","slab","stack","orb"];
+  MODULES.forEach(function(m,i){
+    var a = rad(m.ry);
+    /* 摆在面板「正前方偏一侧」——
+       面板本身朝来客（法线方向是 sin(ry), cos(ry)），物件要落在这个方向的前方，
+       再沿面板右向平移一点避开正脸；同时下移到地面高度（y=96）。
+       早先把偏移方向算成了绕到面板背后，结果物件藏在牌子后面看不见。 */
+    var fwd = 250;                                 /* 面板前方距离（拉近一点，别被牌子压住） */
+    var side = (m.x === 0) ? 430 : (m.x > 0 ? -330 : 330);
+    var px = m.x + Math.sin(a)*fwd + Math.cos(a)*side;
+    var pz = m.z + Math.cos(a)*fwd - Math.sin(a)*side;
+    var py = 96;                                   /* 落地高度 */
+    var el = document.createElement("div");
+    el.className = "prop3d";
+    el.setAttribute("data-kind", KIND[i]);
+    el.setAttribute("data-i", i);
+    el.setAttribute("tabindex","0");
+    el.setAttribute("role","button");
+    el.setAttribute("aria-label", m.cn + " · 查看详情");
+    el.style.setProperty("--pc", m.c);
+    el.style.setProperty("--pw", (i===2||i===5 ? 150 : 200)+"px");
+    el.style.setProperty("--ph", (i===2||i===5 ? 150 : 128)+"px");
+    el.style.transform = "translate3d("+Math.round(px)+"px,"+py+"px,"+Math.round(pz)+"px)"
+                       + " rotateY("+Math.round(m.ry*0.7)+"deg)";
+    el.innerHTML = '<div class="p-pool" aria-hidden="true"></div>'
+                 + '<div class="box">'
+                 +   '<div class="p-face f2" aria-hidden="true"></div>'
+                 +   '<div class="p-face"><div class="p-body"></div></div>'
+                 + '</div>'
+                 + '<div class="p-cap">'+esc(m.tag)+'</div>';
+    /* 绑定点击：走 focusModule（飞过去 + 开详情），已展开则收起。
+       用闭包里的 i，不要依赖事件对象里的索引。 */
+    bindPropOpen(el, i);
+    world.appendChild(el);
+    propEls[i] = el;
+  });
+})();
+function bindPropOpen(el, idx){
+  el.addEventListener("click", function(e){
+    e.stopPropagation();
+    if (openIdx === idx) closeDetail(); else focusModule(idx);
+  });
+  el.addEventListener("keydown", function(e){
+    if (e.key === "Enter" || e.key === " "){
+      e.preventDefault();
+      if (openIdx === idx) closeDetail(); else focusModule(idx);
+    }
+  });
+}
+
+/* —— 微粒 —— */
+(function buildDust(){
+  for (var i=0;i<16;i++){
+    var d = document.createElement("div");
+    d.className = "dust";
+    var s = 3 + Math.random()*4;
+    var inner = document.createElement("i");
+    inner.style.width = s+"px"; inner.style.height = s+"px";
+    inner.style.animationDuration = (5+Math.random()*6).toFixed(1)+"s";
+    inner.style.animationDelay = (-Math.random()*7).toFixed(1)+"s";
+    d.appendChild(inner);
+    d.style.transform = "translate3d("
+      + Math.round((Math.random()*2-1)*820)+"px,"
+      + Math.round(-140 + Math.random()*230)+"px,"
+      + Math.round(180 - Math.random()*2650)+"px)";
+    world.appendChild(d);
+  }
+})();
+
+/* —— 星空 + 星云（全屏 Canvas，性能关键路径） ——
+   原实现每帧：clearRect 全屏 + 2 次 createRadialGradient + 每个粒子都改
+   globalAlpha / fillStyle（每次赋值都让 Canvas 重新解析颜色字符串）。
+   新实现：
+   1) 星点与星云预渲染到「一屏倍宽」的离屏 canvas，每帧只做 1 次 drawImage；
+   2) 星云改为离屏带填充的贴图，避免每帧创建径向渐变；
+   3) 闪烁改为按帧计数全屏透明度调制（原来是逐粒子 sin 计算 + 颜色重解析）；
+   4) 窗口尺寸变化后按 160ms 防抖重建，避免拖拽窗口时疯狂重建贴图。 */
+var starsCv = $("#stars"), starsCtx = starsCv.getContext("2d");
+var skyCv = document.createElement("canvas"), skyCtx = skyCv.getContext("2d");
+var skyDpr = 1, skyW = 0, skyH = 0, skyBlink = 0;
+function buildStars(){
+  /* 高 DPI 屏限制在 1.25 以内：Canvas 像素量与填充率直接决定掉不掉帧 */
+  var dpr = Math.min(1.25, window.devicePixelRatio || 1);
+  var W = Math.max(320, innerWidth), H = Math.max(320, innerHeight);
+  starsCv.width = Math.round(W*dpr); starsCv.height = Math.round(H*dpr);
+  starsCv.style.width = W+"px"; starsCv.style.height = H+"px";
+  skyW = W; skyH = H; skyDpr = dpr;
+  /* 离屏贴图宽 = 屏幕宽 + 600，留出视差平移的余量，平移时左右无缝 */
+  skyCv.width = Math.round((W+600)*dpr);
+  skyCv.height = Math.round((H+400)*dpr);
+  var ctx = skyCtx, sw = skyCv.width, sh = skyCv.height;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,sw,sh);
+  /* 背景氛围光已全部交给 CSS（#veil 的渐变），Canvas 只负责星点。
+     旧实现在这里每帧创建 2 次径向渐变并全屏 fillRect，是掉帧的主要来源之一。 */
+  /* —— 星点：一次性预渲染（亮度在贴图里烘焙好，不再逐帧算 sin） —— */
+  var n = clamp(Math.round(W*H/6800), 110, 260);
+  for (var i=0;i<n;i++){
+    var px = Math.random()*sw, py = Math.random()*sh;
+    var r  = (0.4 + Math.random()*1.25) * dpr;
+    var far = Math.random() < .55;
+    ctx.fillStyle = far ? "rgba(159,182,217,.42)" : "rgba(232,244,255,.82)";
+    ctx.fillRect(px, py, r, r);
+  }
+  /* 少量稍亮的大星，提升层次 */
+  for (var j=0;j<Math.round(n*0.05);j++){
+    var bx = Math.random()*sw, by = Math.random()*sh;
+    ctx.fillStyle = "rgba(255,255,255,.9)";
+    ctx.fillRect(bx, by, 1.9*dpr, 1.9*dpr);
+  }
+  drawSky();
+}
+function drawSky(){
+  if (!skyW) return;
+  var ctx = starsCtx;
+  ctx.setTransform(1,0,0,1,0,0);
+  var tx = Math.round(mod(skyW*0.06 - cam.yaw*1.1, 600) * skyDpr);
+  var ty = Math.round(mod(skyH*0.05 - cam.pitch*1.4, 400) * skyDpr);
+  ctx.globalAlpha = 1 - skyBlink * .35;
+  ctx.drawImage(skyCv, -tx, -ty);
+  ctx.globalAlpha = 1;
+}
+buildStars();
+var rsT = null;
+function onResize(){
+  if (rsT) clearTimeout(rsT);
+  rsT = setTimeout(function(){ rsT = null; buildStars(); }, 160);
+}
+if (window.addEventListener){
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", onResize);
+}
+
+/* —— 相机渲染（性能关键路径） ——
+   1) 不拼字符串：用 style.transform 的各个 CSS 独立属性（translate / rotate），
+      避免 60fps 反复解析 transform 字符串；
+   2) 全部取整：非整数坐标会让浏览器对整条 3D 子树反复重算布局；
+   3) 独立 transform 属性在支持时由合成器直接消费，不触发主线程样式重算。 */
+var useIndep = false, styleMode = 0;   /* 0=indep 1=string 2=matrix */
+var lastTx = null, lastTy = null, lastTz = null, lastRx = null, lastRy = null;
+try { useIndep = world.style && ("translate" in world.style); } catch(e){}
+function renderCam(){
+  var tx = -Math.round(cam.x), ty = -Math.round(cam.y), tz = -Math.round(cam.z);
+  var rx = -Math.round(cam.pitch*100)/100, ry = -Math.round(cam.yaw*100)/100;
+  /* 值没变就别碰样式：省掉无意义的重算，也让「静止时」主线程几乎不干活 */
+  if (tx===lastTx && ty===lastTy && tz===lastTz && rx===lastRx && ry===lastRy) return;
+  lastTx=tx; lastTy=ty; lastTz=tz; lastRx=rx; lastRy=ry;
+  try {
+    if (styleMode === 0 && useIndep){
+      world.style.translate = tx+"px "+ty+"px "+tz+"px";
+      world.style.rotate    = "x("+rx+"deg) y("+ry+"deg)";
+      return;
+    }
+    if (styleMode === 1){
+      world.style.transform = "translate3d("+tx+"px,"+ty+"px,"+tz+"px)"
+                            + " rotateX("+rx+"deg) rotateY("+ry+"deg)";
+      return;
+    }
+  } catch(err){ /* 落到下面的 matrix 兜底 */ }
+  styleMode = 2;
+  var c = Math.cos(rad(ry)), s = Math.sin(rad(ry));
+  var cp = Math.cos(rad(rx)), sp = Math.sin(rad(rx));
+  /* rotateX(rx) · rotateY(ry) 的等价 4x4 矩阵（列主序） */
+  world.style.transform = "matrix3d("
+    + c + "," + (sp*s) + "," + (-cp*s) + ",0,"
+    + "0," + cp + "," + sp + ",0,"
+    + s + "," + (-sp*c) + "," + (cp*c) + ",0,"
+    + tx + "," + ty + "," + tz + ",1)";
+}
+
+/* —— 输入：键盘 —— */
+window.addEventListener("keydown", function(e){
+  if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  var k = e.key.toLowerCase();
+  if (k==="w"||k==="arrowup")   keys.w = true;
+  if (k==="s"||k==="arrowdown") keys.s = true;
+  if (k==="a"||k==="arrowleft") keys.a = true;
+  if (k==="d"||k==="arrowright")keys.d = true;
+  if (k==="q") keys.q = true;
+  if (k==="e") keys.e = true;
+  if (k==="shift") keys.shift = true;
+  if (k>="1" && k<="6"){ focusModule(+k-1); }
+  if (k==="escape"){ closeDetail(); }
+  if (k==="e" && !tween){
+    /* E 键：打开最近的近距离模块 */
+    var best=-1, bd=950;
+    MODULES.forEach(function(m,i){
+      var d = Math.hypot(cam.x-m.x, cam.z-m.z);
+      if (d<bd){ bd=d; best=i; }
+    });
+    if (best>=0) openDetail(best);
+  }
+  if ("wasdqe".indexOf(k)>=0 || k.indexOf("arrow")===0) e.preventDefault();
+});
+window.addEventListener("keyup", function(e){
+  var k = e.key.toLowerCase();
+  if (k==="w"||k==="arrowup")   keys.w = false;
+  if (k==="s"||k==="arrowdown") keys.s = false;
+  if (k==="a"||k==="arrowleft") keys.a = false;
+  if (k==="d"||k==="arrowright")keys.d = false;
+  if (k==="q") keys.q = false;
+  if (k==="e") keys.e = false;
+  if (k==="shift") keys.shift = false;
+});
+
+/* —— 输入：指针（鼠标 / 触摸统一处理） —— */
+var drag = null;
+scene.addEventListener("pointerdown", function(e){
+  if (e.button!==undefined && e.button!==0) return;
+  drag = { id:e.pointerId, x:e.clientX, y:e.clientY, t:performance.now(), moved:0 };
+  scene.classList.add("dragging");
+  try{ scene.setPointerCapture(e.pointerId); }catch(err){}
+});
+scene.addEventListener("pointermove", function(e){
+  if (!drag || e.pointerId!==drag.id) return;
+  var dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+  drag.x = e.clientX; drag.y = e.clientY;
+  drag.moved += Math.abs(dx)+Math.abs(dy);
+  cam.yaw   -= dx*0.22;
+  cam.pitch  = clamp(cam.pitch + dy*0.16, -55, 55);
+  if (drag.moved>6) tween = null;   /* 一旦手动环视，取消自动飞行 */
+});
+function endDrag(e){
+  if (!drag || (e.pointerId!==undefined && e.pointerId!==drag.id)) return;
+  scene.classList.remove("dragging");
+  var quick = performance.now()-drag.t < 450 && drag.moved < 9;
+  var target = e.target;
+  if (quick && target){
+    var card = target.closest ? target.closest(".card") : null;
+    if (card){ focusModule(+card.getAttribute("data-i")); }
+  }
+  drag = null;
+}
+scene.addEventListener("pointerup", endDrag);
+scene.addEventListener("pointercancel", function(){ drag=null; scene.classList.remove("dragging"); });
+
+/* —— 输入：滚轮前后 —— */
+window.addEventListener("wheel", function(e){
+  e.preventDefault();
+  var step = clamp(e.deltaY, -160, 160) * 1.4;
+  var sinY = Math.sin(rad(cam.yaw)), cosY = Math.cos(rad(cam.yaw));
+  cam.x += -sinY * -step;
+  cam.z += -cosY * -step;
+  tween = null;
+}, { passive:false });
+
+/* —— 输入：移动端方向键 —— */
+$$("#pad button").forEach(function(b){
+  var k = b.getAttribute("data-k");
+  function on(e){ e.preventDefault(); keys[k]=true; }
+  function off(e){ e.preventDefault(); keys[k]=false; }
+  b.addEventListener("pointerdown", on);
+  b.addEventListener("pointerup", off);
+  b.addEventListener("pointerleave", off);
+  b.addEventListener("pointercancel", off);
+});
+
+/* —— 碰撞：避免穿过面板 —— */
+function collide(){
+  for (var i=0;i<MODULES.length;i++){
+    var m = MODULES[i];
+    var R = m.w>650 ? 400 : 330;
+    var dx = cam.x-m.x, dz = cam.z-m.z;
+    var d2 = dx*dx+dz*dz;
+    if (d2 < R*R && d2 > 1){
+      var d = Math.sqrt(d2), f = (R-d)/d;
+      cam.x += dx*f; cam.z += dz*f;
+    }
+  }
+  cam.x = clamp(cam.x, -900, 900);
+  cam.z = clamp(cam.z, -2600, 620);
+  cam.y = clamp(cam.y, -120, 140);
+}
+
+/* —— 飞行到模块 —— */
+function nearestYaw(target, cur){
+  return target + 360*Math.round((cur-target)/360);
+}
+function flyTo(i, openAfter){
+  var m = MODULES[i];
+  var a = rad(m.ry);
+  var tx = m.x + Math.sin(a)*VIEW_DIST;
+  var tz = m.z + Math.cos(a)*VIEW_DIST;
+  var dist = Math.max(1, Math.hypot(tx-cam.x, tz-cam.z));
+  var tpitch = deg(Math.asin(clamp((m.y-EYE)/dist, -.6, .6)));
+  tween = {
+    t0: NOW,   /* 用 rAF 时钟，不能用 performance.now()（两者零点可能不同） */
+    dur: REDUCE ? 1 : clamp(dist*0.85, 650, 1500),
+    from: { x:cam.x, y:cam.y, z:cam.z, yaw:cam.yaw, pitch:cam.pitch },
+    to: { x:tx, y:EYE, z:tz, yaw:nearestYaw(m.ry, cam.yaw), pitch:tpitch },
+    open: openAfter ? i : -1
+  };
+}
+function focusModule(i){ closeDetail(); flyTo(i, true); toast("飞往 0"+(i+1)+" "+MODULES[i].cn); }
+
+/* —— 详情开合 —— */
+function openDetail(i){
+  var m = MODULES[i];
+  openIdx = i;
+  detailEl.style.setProperty("--dc", m.c);
+  $("#dtIdx").textContent = "0"+(i+1);
+  $("#dtTitle").textContent = m.cn;
+  $("#dtSub").textContent = m.tag + " · MODULE 0"+(i+1);
+  $("#dtBody").innerHTML = detailHTML(m);
+  detailEl.classList.add("open");
+  detailEl.setAttribute("aria-hidden","false");
+  scrim.classList.add("open");
+  $$("#nav .chip").forEach(function(ch,j){ ch.classList.toggle("on", j===i); });
+  /* 技能条动画 */
+  var bars = $$("#dtBody .bar i");
+  if (bars.length){
+    bars.forEach(function(b){ b.style.width = "0%"; });
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      bars.forEach(function(b){ b.style.width = b.getAttribute("data-v")+"%"; });
+    });});
+  }
+}
+function closeDetail(){
+  if (openIdx<0 && !detailEl.classList.contains("open")) return;
+  openIdx = -1;
+  detailEl.classList.remove("open");
+  detailEl.setAttribute("aria-hidden","true");
+  scrim.classList.remove("open");
+  $$("#nav .chip").forEach(function(ch){ ch.classList.remove("on"); });
+}
+$("#dtClose").addEventListener("click", closeDetail);
+scrim.addEventListener("click", closeDetail);
+
+/* —— Toast —— */
+var toastT = null;
+function toast(msg){
+  var t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastT);
+  toastT = setTimeout(function(){ t.classList.remove("show"); }, 1600);
+}
+
+/* —— 主循环（心跳时钟） ——
+   刻意用 setTimeout 心跳而不是 requestAnimationFrame：
+   1) rAF 在标签页切后台 / 被合成器降级时会暂停，恢复瞬间产生巨大的 dt 跳变，
+      画面会「猛跳一下」；心跳时钟的 dt 永远被 clamp 住；
+   2) 记录类/离屏/虚拟时间环境（如自动化截图）下 rAF 不派发，心跳仍然推进，
+      便于确定性验证；
+   3) 与 --virtual-time-budget 兼容：加载动画与飞行动画不再「看起来没动」。
+   每帧只做「算相机 → 一次样式写入 → 一次 drawImage」，不做布局读写交替。 */
+var last = performance.now(), NOW = performance.now(), fpsAcc=0, fpsN=0, hudT=0;
+var TICK = 16;                         /* 目标 60fps；掉帧时靠 dt 补偿，速度不变慢 */
+var cardEls = [], chipEls = [];         /* 缓存 DOM 引用，避免每帧 querySelector */
+var nearState = [false,false,false,false,false,false];
+var glowI = -1;   /* 当前唯一挂泛光的面板索引 */
+function cacheEls(){
+  cardEls = []; chipEls = [];
+  for (var i=0;i<MODULES.length;i++){
+    cardEls.push($('.card[data-i="'+i+'"]'));
+    chipEls.push($('#nav .chip[data-i="'+i+'"]'));
+    /* 物件在 buildProps 里已入 propEls；这里只补缓存（若尚未构建则跳过） */
+    if (!propEls[i]) propEls[i] = $('.prop3d[data-i="'+i+'"]');
+  }
+}
+function step(dt, now){
+  if (tween){
+    var p = clamp((now-tween.t0)/tween.dur, 0, 1);
+    var k = easeIO(p);
+    cam.x = lerp(tween.from.x, tween.to.x, k);
+    cam.y = lerp(tween.from.y, tween.to.y, k);
+    cam.z = lerp(tween.from.z, tween.to.z, k);
+    cam.yaw = lerp(tween.from.yaw, tween.to.yaw, k);
+    cam.pitch = lerp(tween.from.pitch, tween.to.pitch, k);
+    if (p>=1){
+      var open = tween.open; tween = null;
+      if (open>=0) openDetail(open);
+    }
+  } else {
+    /* 键盘 / 方向键移动 */
+    var f = (keys.w?1:0)-(keys.s?1:0);
+    var s = (keys.d?1:0)-(keys.a?1:0);
+    var v = (keys.e?1:0)-(keys.q?1:0);
+    if (f||s||v){
+      var sp = (keys.shift?760:380)*dt;
+      var sinY = Math.sin(rad(cam.yaw)), cosY = Math.cos(rad(cam.yaw));
+      cam.x += (-sinY*f + cosY*s)*sp;
+      cam.z += (-cosY*f - sinY*s)*sp;
+      cam.y += -v*sp*0.8;
+    }
+  }
+
+  collide();
+  renderCam();                         /* 唯一的样式写入 */
+
+  /* 星云呼吸：只调制离屏贴图的整体透明度（一次 drawImage） */
+  skyBlink = REDUCE ? .3 : .5 + .5*Math.sin(now*.00055);
+  if (!REDUCE || skyBlink === 0) drawSky();
+
+  /* HUD 节流更新 */
+  fpsAcc += dt; fpsN++;
+  hudT += dt;
+  if (hudT > .15){
+    $("#xyz").textContent = "X"+fmtN(cam.x)+" Y"+fmtN(cam.y)+" Z"+fmtN(cam.z);
+    $("#hdg").textContent = ("00"+Math.round(mod(cam.yaw,360))%360).slice(-3)+"°";
+    if (fpsAcc>0){ $("#fps").textContent = Math.round(fpsN/fpsAcc); }
+    fpsAcc=0; fpsN=0; hudT=0;
+    /* 邻近高亮：只在状态翻转时才改 class。
+       顺带算出「最近的一块」并单独打 .glow —— 泛光阴影按盒子光栅化，半径越大
+       盒子越大；6 块同时发光时仅阴影就要多光栅化约 2000 万像素，是掉帧的直接来源。
+       稳态只保留 1 块高亮，开销降到 1/6，视觉上反而更聚焦。 */
+    var bestI = -1, bestD = 1e9;
+    for (var i=0;i<MODULES.length;i++){
+      var m = MODULES[i];
+      var d = Math.hypot(cam.x-m.x, cam.z-m.z);
+      var near = d < 950;
+      if (d < bestD && near){ bestD = d; bestI = i; }
+      if (near === nearState[i]) continue;
+      nearState[i] = near;
+      if (cardEls[i]) cardEls[i].classList.toggle("near", near);
+      if (chipEls[i]) chipEls[i].classList.toggle("near", near);
+    }
+    if (bestI !== glowI){
+      if (glowI >= 0 && cardEls[glowI]) cardEls[glowI].classList.remove("glow");
+      if (bestI >= 0 && cardEls[bestI]) cardEls[bestI].classList.add("glow");
+      /* 对应物件的高亮，复用同一个 bestI，不额外计算距离 */
+      if (glowI >= 0 && propEls[glowI]) propEls[glowI].classList.remove("hot");
+      if (bestI >= 0 && propEls[bestI]) propEls[bestI].classList.add("hot");
+      glowI = bestI;
+    }
+  }
+}
+function frame(){
+  var now = performance.now();
+  var dt = (now-last)/1000;
+  if (dt < 0) dt = 0;
+  if (dt > .05) dt = .05;              /* 掉帧/切后台不加速，最多按 20fps 补偿 */
+  last = now; NOW = now;
+  step(dt, now);
+}
+frame();                               /* 先同步跑一帧，首屏立刻出画面 */
+(function tick(){ frame(); setTimeout(tick, TICK); })();
+
+/* —— 卡片回车键打开 —— */
+world.addEventListener("keydown", function(e){
+  if (e.key==="Enter"){
+    var card = e.target.closest ? e.target.closest(".card") : null;
+    if (card) focusModule(+card.getAttribute("data-i"));
+  }
+});
+
+/* —— 加载与进入 —— */
+var ldFill = $("#ldFill"), ldPct = $("#ldPct"), enterBtn = $("#enterBtn");
+var tips = ["正在初始化 3D 空间…","正在部署霓虹面板…","正在校准镜头…","准备就绪"];
+(function loadSeq(){
+  if (Q.shot==="1"){ enter(); return; }   /* 截图/调试模式：跳过加载动画 */
+  var t0 = null, dur = 1300;
+  function ld(now){
+    if (t0 === null) t0 = now;            /* 用与主循环同一时钟 */
+    var p = clamp((now-t0)/dur, 0, 1);
+    var k = 1-Math.pow(1-p,3);
+    ldFill.style.width = (k*100).toFixed(1)+"%";
+    ldPct.textContent = Math.round(k*100)+"%";
+    $("#ldTip").textContent = tips[Math.min(tips.length-1, Math.floor(p*tips.length))];
+    if (p<1){ setTimeout(function(){ ld(performance.now()); }, 24); }
+    else {
+      $("#ldTip").textContent = tips[tips.length-1];
+      if (Q.auto==="1" || navigator.webdriver){ enter(); }
+      else enterBtn.classList.add("show");
+    }
+  }
+  ld(performance.now());
+})();
+function enter(){
+  if (entered) return;
+  entered = true;
+  var ld = $("#loader");
+  if (Q.shot==="1"){ ld.style.display = "none"; }
+  else {
+    ld.classList.add("done");
+    setTimeout(function(){ ld.style.display="none"; }, 750);
+  }
+  if (Q.yaw!==undefined) cam.yaw = +Q.yaw;
+  if (Q.pitch!==undefined) cam.pitch = +Q.pitch;
+  if (Q.x!==undefined) cam.x = +Q.x;
+  if (Q.z!==undefined) cam.z = +Q.z;
+  if (Q.shot==="1"){
+    /* 截图模式：镜头直接就位，不播入场动画 */
+    renderCam();
+  } else if (Q.yaw!==undefined || Q.x!==undefined || Q.z!==undefined){
+    /* 调试机位：直接就位，不播入场动画 */
+    renderCam();
+  } else if (!REDUCE){
+    /* 入场镜头：从远处推进 */
+    tween = { t0:NOW, dur:1700,
+      from:{ x:0, y:80, z:1450, yaw:-14, pitch:2 },
+      to:{ x:0, y:EYE, z:340, yaw:0, pitch:0 }, open:-1 };
+  }
+  if (Q.focus!==undefined && MODULES[+Q.focus]){
+    setTimeout(function(){ focusModule(+Q.focus); }, 420);
+  }
+}
+enterBtn.addEventListener("click", enter);
+
+/* —— 缓存 DOM 引用（主循环用，避免每帧查询） —— */
+cacheEls();
+/* —— 首帧渲染前先落一次相机，避免从原点「闪一下」 —— */
+if (OK3D) renderCam();
+
+/* —— 启动 —— */
+try {
+  document.title = RESUME.profile.name + " · 3D 简历";
+  $("#brandName").textContent = RESUME.profile.name;
+  if (!OK3D){
+    document.documentElement.classList.add("no3d");
+    buildFallback();
+    $("#loader").classList.add("done");
+    setTimeout(function(){ $("#loader").style.display="none"; }, 400);
+  } else {
+    renderCam();
+  }
+} catch(err){
+  var f = $("#fatal");
+  f.style.display = "grid";
+  f.innerHTML = "<div>初始化失败<br><b>"+esc(err.message)+"</b><br>请换用新版 Chrome / Edge / Firefox 打开</div>";
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "portfolio-3d",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "3D interactive portfolio — a sketched infinite gallery corridor built with React Three Fiber.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.4.2",
+    "@react-three/postprocessing": "^3.0.4",
+    "gsap": "^3.14.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "three": "^0.182.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "sass": "^1.94.0",
+    "vite": "^7.2.4",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}

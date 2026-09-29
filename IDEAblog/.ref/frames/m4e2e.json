@@ -1,0 +1,76 @@
+{
+  "phase": "done",
+  "aim": {
+    "pos": [
+      2,
+      2.15,
+      20
+    ],
+    "rot": [
+      0,
+      1.5707963267948966,
+      0
+    ]
+  },
+  "proj": {
+    "target": {
+      "world": [
+        -4.45,
+        2.15,
+        24
+      ],
+      "screen": [
+        264.30920955091125,
+        348.5
+      ],
+      "ndc": [
+        -0.5764275487966166,
+        0
+      ]
+    },
+    "count": 12,
+    "viewport": [
+      1248,
+      697
+    ]
+  },
+  "hoverA": {
+    "hoverArtwork": "education",
+    "cursor": "pointer",
+    "bodyCursorComputed": "pointer",
+    "nearestTransparentOpacity": 1
+  },
+  "hoverB": {
+    "hoverArtwork": "education",
+    "cursor": "pointer",
+    "bodyCursorComputed": "pointer",
+    "nearestTransparentOpacity": 1
+  },
+  "dialog": {
+    "open": true,
+    "role": "dialog",
+    "ariaModal": "true",
+    "labelledBy": "detail-title-education",
+    "title": "教育背景",
+    "blocks": 2,
+    "items": 5,
+    "rect": [
+      264,
+      77,
+      720,
+      544
+    ],
+    "opacity": "1",
+    "animationName": "detail-card-in",
+    "focusInPanel": true,
+    "activeTag": "DIV",
+    "bodyOverflow": "hidden",
+    "veilExists": false
+  },
+  "after": {
+    "detailExists": false,
+    "overflow": "",
+    "hoverArtwork": null
+  },
+  "problems": []
+}

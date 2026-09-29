@@ -1,0 +1,295 @@
+{
+  "phase": "done",
+  "paints": {
+    "count": 12,
+    "compiledCount": 7,
+    "injectedCount": 7,
+    "injectionOkCount": 7,
+    "maxProgress": 0,
+    "samples": [
+      {
+        "pos": [
+          -4.46,
+          2.15,
+          32
+        ],
+        "progress": 0,
+        "compiled": false,
+        "hasPainted": true,
+        "hasSketch": true,
+        "uniformProgress": null,
+        "uniformPaintedTex": null,
+        "uniformOrigin": null,
+        "uniformDir": null,
+        "hasNoiseFn": false,
+        "hasMapFragmentInject": false,
+        "injectionTried": false,
+        "injectionOk": false,
+        "injectionMissing": [],
+        "revealSpan": 1.9,
+        "programKey": "paintReveal|1.00|0.00|0.50|3.2|11|0.62|0.22|0.5|1.9"
+      },
+      {
+        "pos": [
+          4.46,
+          2.15,
+          28
+        ],
+        "progress": 0,
+        "compiled": false,
+        "hasPainted": true,
+        "hasSketch": true,
+        "uniformProgress": null,
+        "uniformPaintedTex": null,
+        "uniformOrigin": null,
+        "uniformDir": null,
+        "hasNoiseFn": false,
+        "hasMapFragmentInject": false,
+        "injectionTried": false,
+        "injectionOk": false,
+        "injectionMissing": [],
+        "revealSpan": 1.9,
+        "programKey": "paintReveal|-1.00|0.00|0.50|3.2|11|0.62|0.22|0.5|1.9"
+      },
+      {
+        "pos": [
+          -4.46,
+          2.15,
+          24
+        ],
+        "progress": 0,
+        "compiled": false,
+        "hasPainted": true,
+        "hasSketch": true,
+        "uniformProgress": null,
+        "uniformPaintedTex": null,
+        "uniformOrigin": null,
+        "uniformDir": null,
+        "hasNoiseFn": false,
+        "hasMapFragmentInject": false,
+        "injectionTried": false,
+        "injectionOk": false,
+        "injectionMissing": [],
+        "revealSpan": 1.9,
+        "programKey": "paintReveal|1.00|0.00|0.50|3.2|11|0.62|0.22|0.5|1.9"
+      },
+      {
+        "pos": [
+          4.46,
+          2.15,
+          20
+        ],
+        "progress": 0,
+        "compiled": false,
+        "hasPainted": true,
+        "hasSketch": true,
+        "uniformProgress": null,
+        "uniformPaintedTex": null,
+        "uniformOrigin": null,
+        "uniformDir": null,
+        "hasNoiseFn": false,
+        "hasMapFragmentInject": false,
+        "injectionTried": false,
+        "injectionOk": false,
+        "injectionMissing": [],
+        "revealSpan": 1.9,
+        "programKey": "paintReveal|-1.00|0.00|0.50|3.2|11|0.62|0.22|0.5|1.9"
+      },
+      {
+        "pos": [
+          -4.46,
+          2.15,
+          12
+        ],
+        "progress": 0,
+        "compiled": false,
+        "hasPainted": true,
+        "hasSketch": true,
+        "uniformProgress": null,
+        "uniformPaintedTex": null,
+        "uniformOrigin": null,
+        "uniformDir": null,
+        "hasNoiseFn": false,
+        "hasMapFragmentInject": false,
+        "injectionTried": false,
+        "injectionOk": false,
+        "injectionMissing": [],
+        "revealSpan": 1.9,
+        "programKey": "paintReveal|1.00|0.00|0.50|3.2|11|0.62|0.22|0.5|1.9"
+      },
+      {
+        "pos": [
+          4.46,
+          2.15,
+          8
+        ],
+        "progress": 0,
+        "compiled": true,
+        "hasPainted": true,
+        "hasSketch": true,
+        "uniformProgress": 0,
+        "uniformPaintedTex": "tex",
+        "uniformOrigin": [
+          4.48,
+          2.15,
+          8
+        ],
+        "uniformDir": [
+          -0.894,
+          0,
+          0.447
+        ],
+        "hasNoiseFn": true,
+        "hasMapFragmentInject": true,
+        "injectionTried": true,
+        "injectionOk": true,
+        "injectionMissing": [],
+        "revealSpan": 1.9,
+        "programKey": "paintReveal|-1.00|0.00|0.50|3.2|11|0.62|0.22|0.5|1.9"
+      }
+    ]
+  },
+  "aim": {
+    "ok": true
+  },
+  "proj": {
+    "target": {
+      "screen": [
+        265.0882428223048,
+        348.5
+      ],
+      "world": [
+        -4.46,
+        2.15,
+        24
+      ]
+    },
+    "count": 12
+  },
+  "satBefore": {
+    "avg": 7.988368533823079,
+    "max": 10,
+    "n": 9801
+  },
+  "registry": {
+    "size": 12,
+    "ids": [
+      "rev-1",
+      "rev-2",
+      "rev-3",
+      "rev-4",
+      "rev-13",
+      "rev-14",
+      "rev-15",
+      "rev-16",
+      "rev-21",
+      "rev-22",
+      "rev-23",
+      "rev-24"
+    ]
+  },
+  "steps": [
+    {
+      "progress": 0,
+      "avgSat": 7.99,
+      "maxSat": 10
+    },
+    {
+      "progress": 0.25,
+      "avgSat": 16.98,
+      "maxSat": 31
+    },
+    {
+      "progress": 0.5,
+      "avgSat": 61,
+      "maxSat": 156
+    },
+    {
+      "progress": 0.75,
+      "avgSat": 61.13,
+      "maxSat": 167
+    },
+    {
+      "progress": 1,
+      "avgSat": 57.89,
+      "maxSat": 169
+    }
+  ],
+  "profile": {
+    "x": 265,
+    "colored": 75,
+    "grayish": 6,
+    "midTone": 3,
+    "jumps": 5,
+    "samples": [
+      19,
+      17,
+      15,
+      130,
+      129,
+      129,
+      129,
+      135,
+      156,
+      156,
+      151,
+      152,
+      154,
+      153,
+      151,
+      19,
+      12,
+      15,
+      17,
+      18,
+      19
+    ]
+  },
+  "hoverState": {
+    "hoverArtwork": "education",
+    "cursor": "pointer",
+    "maxProgress": 1,
+    "anyRevealed": 12,
+    "total": 12
+  },
+  "satAfter": {
+    "avg": 57.89388837873686,
+    "max": 169,
+    "n": 9801
+  },
+  "checks": [
+    {
+      "name": "着色器已编译（>0 且全部注入成功）",
+      "ok": true
+    },
+    {
+      "name": "注入没有任何锚点未命中",
+      "ok": true
+    },
+    {
+      "name": "进度上升带来饱和度上升（首尾）",
+      "ok": true
+    },
+    {
+      "name": "中间档位处于两端之间",
+      "ok": true
+    },
+    {
+      "name": "hover 触发揭示",
+      "ok": true
+    },
+    {
+      "name": "hover 后像素确实变彩",
+      "ok": true
+    },
+    {
+      "name": "边界为噪声渐变（存在中间调）",
+      "ok": true
+    },
+    {
+      "name": "无 JS 异常",
+      "ok": true
+    }
+  ],
+  "problems": []
+}

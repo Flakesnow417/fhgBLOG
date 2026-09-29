@@ -22,10 +22,50 @@
       <a href="index.html">首页</a>
       <a href="ideas.html">想法集</a>
       <a href="about.html">关于</a>
+      <!-- 3D 作品集：独立 Vite 工程，需先在 portfolio-3d 跑 `npm run dev` -->
+      <a href="http://localhost:5173" target="_blank" rel="noopener">3D 长廊</a>
     </nav>
   </header>
 
   <main class="idea-main idea-main--stage">
+
+    <!-- ======== 庭院 · 定点 360° 环视（assets/ideas-courtyard.js） ========
+         站在一间水墨庭院中央：远山、竹林、石灯、雾气。
+         按住拖动环视四周，松手有惯性，静置一会儿会极慢自转。
+         全景图不是照片，是 assets/pano/ 里用 Canvas 画出来再拼的。
+         WebGL 不可用时整层隐去，页面回落到原本的夜色背景。 ======== -->
+    <section class="idea-courtyard" id="idea-courtyard-stage">
+      <canvas id="idea-courtyard" data-pano="assets/pano/pano.png"></canvas>
+
+      <!-- 游戏 UI：四角墨框 + 篆意标题 + 罗盘 + 落款印 -->
+      <div class="courtyard-ui" aria-hidden="true">
+        <div class="cy-corner cy-tl"><i></i><i></i></div>
+        <div class="cy-corner cy-tr"><i></i><i></i></div>
+        <div class="cy-corner cy-bl"><i></i><i></i></div>
+        <div class="cy-corner cy-br"><i></i><i></i></div>
+
+        <div class="cy-title">
+          <b>庭院</b>
+          <span>一 念 未 落</span>
+        </div>
+
+        <div class="cy-compass" id="cy-compass">
+          <em data-deg="0">东</em>
+          <em data-deg="90">南</em>
+          <em data-deg="180">西</em>
+          <em data-deg="270">北</em>
+        </div>
+
+        <div class="cy-tip" id="cy-tip">按住拖动 · 环视四周</div>
+        <div class="cy-seal">念</div>
+      </div>
+
+      <!-- 无障碍 / 无 WebGL：给一句说明，别让人对着空白发呆 -->
+      <p class="courtyard-fallback">
+        这间庭院需要开启 JavaScript 与 WebGL 才能走动。
+        下方仍是完整的想法列表。
+      </p>
+    </section>
 
     <!-- ======== 想法棋局：assets/ideas-board.js · Three.js 3D 棋盘 ========
          棋盘直接悬浮在页面上：没有卡片、没有边框、没有背板，
@@ -94,7 +134,41 @@
 
   <script src="assets/vendor/three.min.js"></script>
   <script src="assets/ideas-data.js"></script>
+  <script src="assets/ideas-courtyard.js"></script>
   <script src="assets/ideas-board.js"></script>
+  <script>
+    /* ---------- 罗盘：跟着环视方向亮起来 ---------- */
+    (function () {
+      var cp = document.getElementById("cy-compass");
+      var tip = document.getElementById("cy-tip");
+      if (!cp || !window.Courtyard) return;
+
+      var marks = cp.querySelectorAll("em");
+      if (tip) {
+        tip.textContent = "按住拖动 · 环视四周 · 滚轮微调视野";
+      }
+
+      /* 每帧回调里改样式太重，这里只在"跨过某个方向"时才动 DOM */
+      var lastOn = -1;
+      window.Courtyard.onFrame = function (yaw) {
+        var norm = ((yaw % 360) + 360) % 360;
+        var best = -1, bestD = 999;
+        for (var i = 0; i < marks.length; i++) {
+          var d = +marks[i].getAttribute("data-deg");
+          /* 到该方向的角距，取最短的那一侧 */
+          var diff = Math.abs(((norm - d + 540) % 360) - 180);
+          var dist = 180 - diff;
+          if (dist < bestD) { bestD = dist; best = i; }
+        }
+        if (best !== lastOn) {
+          for (var j = 0; j < marks.length; j++) {
+            marks[j].classList.toggle("on", j === best);
+          }
+          lastOn = best;
+        }
+      };
+    })();
+  </script>
   <script>
     /* ---------- 3D 就绪后：把标题也交给棋盘舞台（棋盘独占首屏） ---------- */
     (function () {

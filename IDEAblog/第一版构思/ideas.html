@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>想法集 · 一念未落</title>
+  <meta name="description" content="一盘没下完的棋：每个想法都是棋盘上的一枚子。萌芽、生长、已成。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='3' y='3' width='58' height='58' rx='9' fill='%23a8322d'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' fill='%23f4f1e8' font-family='KaiTi,serif'%3E念%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="idea-page night-bg">
+
+  <!-- 深夜天幕：全屏 Canvas，页面内容浮在它上面（assets/night.js） -->
+  <canvas id="idea-night" class="idea-night" aria-hidden="true"></canvas>
+
+  <header class="idea-head">
+    <a class="idea-brand" href="index.html">一念未落</a>
+    <nav class="idea-nav">
+      <a href="index.html">首页</a>
+      <a href="ideas.html">想法集</a>
+      <a href="about.html">关于</a>
+    </nav>
+  </header>
+
+  <main class="idea-main idea-main--stage">
+
+    <!-- ======== 庭院 · 定点 360° 环视（assets/ideas-courtyard.js） ========
+         站在一间水墨庭院中央：远山、竹林、石灯、雾气。
+         按住拖动环视四周，松手有惯性，静置一会儿会极慢自转。
+         全景图不是照片，是 assets/pano/ 里用 Canvas 画出来再拼的。
+         WebGL 不可用时整层隐去，页面回落到原本的夜色背景。 ======== -->
+    <section class="idea-courtyard" id="idea-courtyard-stage">
+      <canvas id="idea-courtyard" data-pano="assets/pano/pano.png"></canvas>
+
+      <!-- 游戏 UI：四角墨框 + 篆意标题 + 罗盘 + 落款印 -->
+      <div class="courtyard-ui" aria-hidden="true">
+        <div class="cy-corner cy-tl"><i></i><i></i></div>
+        <div class="cy-corner cy-tr"><i></i><i></i></div>
+        <div class="cy-corner cy-bl"><i></i><i></i></div>
+        <div class="cy-corner cy-br"><i></i><i></i></div>
+
+        <div class="cy-title">
+          <b>庭院</b>
+          <span>一 念 未 落</span>
+        </div>
+
+        <div class="cy-compass" id="cy-compass">
+          <em data-deg="0">东</em>
+          <em data-deg="90">南</em>
+          <em data-deg="180">西</em>
+          <em data-deg="270">北</em>
+        </div>
+
+        <div class="cy-tip" id="cy-tip">按住拖动 · 环视四周</div>
+        <div class="cy-seal">念</div>
+      </div>
+
+      <!-- 无障碍 / 无 WebGL：给一句说明，别让人对着空白发呆 -->
+      <p class="courtyard-fallback">
+        这间庭院需要开启 JavaScript 与 WebGL 才能走动。
+        下方仍是完整的想法列表。
+      </p>
+    </section>
+
+    <!-- ======== 想法棋局：assets/ideas-board.js · Three.js 3D 棋盘 ========
+         棋盘直接悬浮在页面上：没有卡片、没有边框、没有背板，
+         只有一层落影。拖动旋转 / 滚轮缩放 / 点棋子看想法。
+         WebGL 不可用时，下方卡片列表与标题自动兜底。 ======== -->
+    <section class="idea-board-stage" id="idea-stage">
+      <div class="idea-board-shadow" aria-hidden="true"></div>
+      <canvas id="idea-board"></canvas>
+      <!-- 两处浮层：无底板、无边框，只是浮在棋盘上方的字 -->
+      <div class="idea-board-op" aria-hidden="true">拖动旋转 · 滚轮缩放 · 点棋子看想法</div>
+      <div class="idea-board-legend">
+        <b>萌芽</b>·陶土　<b>生长</b>·黄铜　<b>已成</b>·墨玉　<b>灰子</b>·未落
+      </div>
+
+      <!-- 游戏层：入局按钮（点击后换成方向键走子的提示） -->
+      <button class="idea-join" id="idea-join-btn" type="button" aria-pressed="false">
+        <span class="idea-join-on">入局</span>
+        <span class="idea-join-off">出局</span>
+      </button>
+
+      <!-- 棋盘样式切换：四套程序化贴图，即点即换，记住上次选择 -->
+      <div class="idea-style" id="idea-style" role="group" aria-label="棋盘样式">
+        <button type="button" data-style="wood" aria-pressed="true">檀木</button>
+        <button type="button" data-style="marble" aria-pressed="false">云石</button>
+        <button type="button" data-style="felt" aria-pressed="false">墨毡</button>
+        <button type="button" data-style="night" aria-pressed="false">星夜</button>
+      </div>
+
+      <!-- 靠近目标棋子时弹出的链接入口：绝不自动跳，必须点它 -->
+      <a class="idea-near" id="idea-near" href="#" rel="noopener"></a>
+
+      <!-- 入局后的操作提示：换成方向键说明 -->
+      <div class="idea-play-hint" aria-hidden="true">
+        方向键走子 · 靠近想法即现入口 · 点入口入册 · Esc 出局
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 舞台下方的内容层：正常文档流，滚过棋盘后出现 -->
+  <div class="idea-afterstage" id="idea-after">
+    <div class="idea-afterstage-inner">
+
+      <div class="idea-pagehead">
+        <h1>想法集</h1>
+        <p class="idea-lead">一盘没下完的棋 —— 每个想法都是棋盘上的一枚子。</p>
+      </div>
+
+      <!-- 卡片列表：无 3D 时的降级（3D 就绪后由 JS 自动隐藏） -->
+      <div class="idea-grid" id="idea-grid">
+        <noscript>
+          <p style="color:var(--mo-light)">需要启用 JavaScript 才能看到想法列表；
+          也可以直接打开 ideas/ 目录里的详情页。</p>
+        </noscript>
+      </div>
+
+      <div class="idea-hint">
+        新增一条想法：打开 <code>assets/ideas-data.js</code>，照着现有条目抄一段、改内容即可，
+        棋盘上的棋子会自动出现。想写长文，就在 <code>ideas/</code> 目录建一个页面，把 <code>href</code> 指过去。
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="idea-foot">© 2026 一念未落 · 未成之想，皆可入册</footer>
+
+  <script src="assets/vendor/three.min.js"></script>
+  <script src="assets/ideas-data.js"></script>
+  <script src="assets/ideas-courtyard.js"></script>
+  <script src="assets/ideas-board.js"></script>
+  <script>
+    /* ---------- 罗盘：跟着环视方向亮起来 ---------- */
+    (function () {
+      var cp = document.getElementById("cy-compass");
+      var tip = document.getElementById("cy-tip");
+      if (!cp || !window.Courtyard) return;
+
+      var marks = cp.querySelectorAll("em");
+      if (tip) {
+        tip.textContent = "按住拖动 · 环视四周 · 滚轮微调视野";
+      }
+
+      /* 每帧回调里改样式太重，这里只在"跨过某个方向"时才动 DOM */
+      var lastOn = -1;
+      window.Courtyard.onFrame = function (yaw) {
+        var norm = ((yaw % 360) + 360) % 360;
+        var best = -1, bestD = 999;
+        for (var i = 0; i < marks.length; i++) {
+          var d = +marks[i].getAttribute("data-deg");
+          /* 到该方向的角距，取最短的那一侧 */
+          var diff = Math.abs(((norm - d + 540) % 360) - 180);
+          var dist = 180 - diff;
+          if (dist < bestD) { bestD = dist; best = i; }
+        }
+        if (best !== lastOn) {
+          for (var j = 0; j < marks.length; j++) {
+            marks[j].classList.toggle("on", j === best);
+          }
+          lastOn = best;
+        }
+      };
+    })();
+  </script>
+  <script>
+    /* ---------- 3D 就绪后：把标题也交给棋盘舞台（棋盘独占首屏） ---------- */
+    (function () {
+      var stage = document.getElementById("idea-stage");
+      var after = document.getElementById("idea-after");
+      if (!stage || !after) return;
+
+      function layout() {
+        var ready = document.body.classList.contains("idea-board-3d");
+        if (!ready) return;
+        /* 舞台占满首屏；标题块移到下方内容层 */
+        stage.style.height = Math.round(window.innerHeight) + "px";
+        after.style.marginTop = "0px";
+      }
+
+      /* JS 里不再用 CSS 撑高，改为按视口精确算：不会被裁剪 */
+      window.addEventListener("resize", layout);
+      layout();
+      window.__ideaStageLayout = layout;
+    })();
+  </script>
+  <script>
+    /* 渲染降级卡片列表：数据 → HTML（3D 就绪后整区隐藏） */
+    (function () {
+      var box = document.getElementById("idea-grid");
+      if (!box || !window.IDEAS) return;
+
+      var STATUS = {
+        seed:    ["萌芽", "idea-chip--seed"],
+        growing: ["生长", "idea-chip--growing"],
+        done:    ["已成", "idea-chip--done"]
+      };
+
+      function esc(s) {
+        return String(s).replace(/[&<>"]/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+        });
+      }
+
+      window.IDEAS.forEach(function (idea, i) {
+        var st = STATUS[idea.status] || STATUS.seed;
+
+        var a = document.createElement("a");
+        a.className = "idea-card idea-rise";
+        a.style.animationDelay = (i * 0.12 + 0.1) + "s";
+        if (idea.href) a.href = idea.href;
+
+        var tags = (idea.tags || []).map(function (t) {
+          return "<span>#" + esc(t) + "</span>";
+        }).join("");
+
+        a.innerHTML =
+          "<h2>" + esc(idea.title) + "</h2>" +
+          "<p>" + esc(idea.summary) + "</p>" +
+          '<div class="idea-cardmeta">' +
+            '<span class="idea-chip ' + st[1] + '">' + st[0] + "</span>" +
+            "<span>" + esc(idea.date) + "</span>" +
+            tags +
+            (idea.href ? '<span class="idea-cardmore">展开 →</span>' : "") +
+          "</div>";
+
+        box.appendChild(a);
+      });
+    })();
+
+    /* 卡片渲染完再让棋盘布局（棋盘要按首屏高度定尺寸） */
+    if (window.__ideaStageLayout) window.__ideaStageLayout();
+  </script>
+  <script src="assets/night.js"></script>
+  <script src="assets/ink.js"></script>
+  <!-- 性能采样工具：默认不出现在页面上，?perf=1 或 __ideaPerf.on() 才显示 -->
+  <script src="assets/ideas-perf.js"></script>
+</body>
+</html>

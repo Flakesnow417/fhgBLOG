@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新手教学手册 · 做出一念未落与 3D 素描长廊</title>
+<style>
+  :root {
+    --paper: #f7f4ec;
+    --paper-2: #efeae0;
+    --ink: #1c1a17;
+    --ink-2: #4a4640;
+    --ink-3: #8a8478;
+    --line: rgba(28,26,23,.12);
+    --zhu: #a8322d;
+    --zhu-soft: rgba(168,50,45,.09);
+    --green: #3d4f45;
+    --amber: #8a5a30;
+    --code-bg: #22201d;
+    --code-ink: #e8e3d8;
+    --mono: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
+    --serif: "Noto Serif SC", "Songti SC", SimSun, serif;
+    --sans: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 20px; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- 布局：左侧目录 + 右正文 ---------- */
+  .layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 0;
+  }
+
+  /* ---------- 侧边目录 ---------- */
+  .toc {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 18px 60px 26px;
+    border-right: 1px solid var(--line);
+    background: var(--paper-2);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .toc__brand {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--zhu);
+    letter-spacing: .08em;
+    margin: 0 0 4px;
+  }
+  .toc__sub {
+    font-size: 12px;
+    color: var(--ink-3);
+    margin: 0 0 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .toc__group { margin-bottom: 16px; }
+  .toc__group-title {
+    font-size: 11px;
+    letter-spacing: .16em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .toc a {
+    display: block;
+    color: var(--ink-2);
+    text-decoration: none;
+    padding: 3px 8px;
+    border-left: 2px solid transparent;
+    border-radius: 0 3px 3px 0;
+    transition: background .15s, color .15s, border-color .15s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .toc a:hover { background: rgba(168,50,45,.07); color: var(--zhu); }
+  .toc a.active {
+    color: var(--zhu);
+    border-left-color: var(--zhu);
+    background: var(--zhu-soft);
+    font-weight: 600;
+  }
+  .toc__h2 { padding-left: 8px; font-weight: 600; }
+  .toc__h3 { padding-left: 22px; font-size: 12.5px; color: var(--ink-3); }
+
+  /* ---------- 正文 ---------- */
+  .main {
+    padding: 40px 60px 120px;
+    min-width: 0;
+    max-width: 900px;
+  }
+
+  .hero {
+    margin-bottom: 48px;
+    padding-bottom: 28px;
+    border-bottom: 3px double var(--line);
+  }
+  .hero h1 {
+    font-size: 40px;
+    line-height: 1.3;
+    margin: 0 0 12px;
+    letter-spacing: .02em;
+  }
+  .hero p { color: var(--ink-2); font-size: 17px; margin: 0; }
+  .hero .stamp {
+    display: inline-block;
+    margin-top: 18px;
+    padding: 5px 14px;
+    border: 1.5px solid var(--zhu);
+    color: var(--zhu);
+    font-size: 12.5px;
+    letter-spacing: .18em;
+    font-family: var(--sans);
+  }
+
+  h1, h2, h3, h4 { line-height: 1.4; }
+
+  h2 {
+    font-size: 27px;
+    margin: 64px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+    scroll-margin-top: 20px;
+  }
+  h2::before {
+    content: "";
+    display: inline-block;
+    width: 5px; height: 22px;
+    background: var(--zhu);
+    margin-right: 12px;
+    vertical-align: -3px;
+  }
+  h3 {
+    font-size: 20px;
+    margin: 40px 0 14px;
+    color: var(--green);
+    scroll-margin-top: 20px;
+  }
+  h4 {
+    font-size: 17px;
+    margin: 28px 0 10px;
+    color: var(--amber);
+    scroll-margin-top: 20px;
+  }
+
+  p { margin: 0 0 14px; }
+
+  a { color: var(--zhu); text-decoration: none; border-bottom: 1px solid rgba(168,50,45,.3); }
+  a:hover { border-bottom-color: var(--zhu); }
+
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--amber); font-style: normal; font-weight: 600; }
+
+  /* ---------- 代码 ---------- */
+  code {
+    font-family: var(--mono);
+    font-size: .88em;
+    background: rgba(28,26,23,.07);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--zhu);
+    word-break: break-word;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 18px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.7;
+    margin: 16px 0;
+    position: relative;
+    border-left: 4px solid var(--zhu);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+    border-radius: 0;
+  }
+  pre::before {
+    content: attr(data-lang);
+    position: absolute;
+    top: 7px; right: 12px;
+    font-family: var(--sans);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    color: rgba(232,227,216,.35);
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  /* 语法高亮（hljs 未加载时的兜底配色） */
+  .hljs-keyword, .hljs-built_in { color: #d98c6a; }
+  .hljs-string, .hljs-attr { color: #9fbf85; }
+  .hljs-comment { color: #7d7870; font-style: italic; }
+  .hljs-number, .hljs-literal { color: #d4b06a; }
+  .hljs-function, .hljs-title { color: #8fb8d8; }
+  .hljs-variable, .hljs-params { color: #d8d2c6; }
+  .hljs-tag, .hljs-name { color: #d98c6a; }
+  .hljs-property { color: #8fb8d8; }
+
+  /* ---------- 引用 ---------- */
+  blockquote {
+    margin: 18px 0;
+    padding: 12px 20px;
+    background: var(--zhu-soft);
+    border-left: 4px solid var(--zhu);
+    color: var(--ink-2);
+  }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote strong { color: var(--zhu); }
+
+  /* ---------- 表格 ---------- */
+  .table-wrap { overflow-x: auto; margin: 18px 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14.5px;
+    font-family: var(--sans);
+  }
+  th, td {
+    border: 1px solid var(--line);
+    padding: 9px 13px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--paper-2);
+    font-weight: 700;
+    color: var(--green);
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(even) { background: rgba(28,26,23,.02); }
+
+  /* ---------- 列表 ---------- */
+  ul, ol { margin: 0 0 14px; padding-left: 26px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---------- 图片 ---------- */
+  img {
+    max-width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    margin: 14px 0;
+    display: block;
+    box-shadow: 0 3px 16px rgba(28,26,23,.08);
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 46px 0;
+  }
+
+  /* ---------- 任务列表 / 检查表 ---------- */
+  input[type="checkbox"] { margin-right: 7px; accent-color: var(--zhu); }
+
+  /* ---------- Mermaid ---------- */
+  .mermaid {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px;
+    margin: 18px 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+
+  /* ---------- 文件导航（多文档切换） ---------- */
+  .docbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 26px;
+    padding: 10px 12px;
+    background: var(--paper-2);
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+  .docbar button {
+    font: inherit;
+    padding: 5px 12px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink-2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .docbar button:hover { border-color: var(--zhu); color: var(--zhu); }
+  .docbar button.on {
+    background: var(--zhu);
+    border-color: var(--zhu);
+    color: var(--paper);
+    font-weight: 600;
+  }
+
+  .doc { display: none; }
+  .doc.on { display: block; }
+
+  /* ---------- 顶部进度条 ---------- */
+  .progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--zhu);
+    z-index: 100;
+    width: 0;
+    transition: width .1s;
+  }
+
+  /* ---------- 打印 ---------- */
+  @media print {
+    .toc, .docbar, .progress { display: none !important; }
+    .layout { display: block; max-width: none; }
+    .main { padding: 0; max-width: none; }
+    body { background: #fff; font-size: 11.5pt; }
+    .doc { display: block !important; }
+    pre { background: #f4f4f4; color: #222; border-left-color: #999; }
+    pre::before { display: none; }
+    h2 { page-break-after: avoid; }
+    pre, table, img, blockquote { page-break-inside: avoid; }
+    a { color: #000; border: none; }
+    img { box-shadow: none; }
+    .hero h1 { font-size: 24pt; }
+  }
+
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+    .toc {
+      position: static;
+      height: auto;
+      max-height: 300px;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+    }
+    .main { padding: 26px 20px 80px; }
+    .hero h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="layout">
+  <aside class="toc">
+    <h1 class="toc__brand">新手教学手册</h1>
+    <p class="toc__sub">做出一念未落 &amp; 3D 素描长廊</p>
+    <div id="toc-list"></div>
+  </aside>
+
+  <main class="main">
+    <div class="hero">
+      <h1>从零做出这两个页面</h1>
+      <p>一份写给完全新手的手册 —— 从一个空的文件夹，到能走进去的 3D 素描长廊。</p>
+      <span class="stamp">真实截图 · 实测链接 · 分阶段检查表</span>
+    </div>
+
+    <div class="docbar" id="docbar"></div>
+
+    <div id="docs-root"></div>
+  </main>
+</div>
+
+<!--
+  三个 CDN 依赖。都用 jsdelivr（国内可达性一般，但比 unpkg 好）。
+
+  ⚠️ highlight.js 的包名要注意：npm 上的 `highlight.js` 包**没有**可直接
+     引入的浏览器单文件，必须用官方构建好的 `@highlightjs/cdn-assets`。
+     写成 `highlight.js@11.9.0/lib/highlight.min.js` 会 404，
+     而且页面不会报错 —— 只是代码不再高亮，很难察觉。
+
+  这些库挂了也不影响阅读：marked 挂了会显示"载入失败"提示；
+  highlight 挂了代码就是纯色；mermaid 挂了图会显示成源码。
+  所以每处调用都做了存在性检查（见下面的 if (window.hljs) 等）。
+-->
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+
+<script>
+/* ============================================================
+   文档清单
+   ------------------------------------------------------------
+   每份 .md 用 fetch 读进来，marked 转 HTML，插到页面上。
+   注意：直接双击本文件（file:// 协议）时，浏览器会因同源策略
+   拒绝 fetch 本地 .md —— 这是浏览器的安全限制，不是代码问题。
+   所以本页面必须通过 http:// 打开（用下面的方式起一个本地服务）。
+
+   起服务的方式（在 E:\fhgBLOG\newtechnique 目录下执行）：
+     npx serve .           或
+     python -m http.server 8080
+   然后浏览器打开 http://localhost:8080/手册.html
+   ============================================================ */
+const DOCS = [
+  { id: 'guide',  file: '00-先看这个-阅读指引.md',        label: '① 阅读指引',  short: '先看这个' },
+  { id: 'manual', file: '01-新手实操手册.md',             label: '② 实操手册',  short: '主教材', on: true },
+  { id: 'concept',file: '02-知识点总图与通俗比喻.md',      label: '③ 知识总图',  short: '字典' },
+  { id: 'mind',   file: '03-知识点思维导图.md',           label: '④ 思维导图',  short: '地图' },
+  { id: 'cheat',  file: '04-速查卡.md',                   label: '⑤ 速查卡',    short: '便利贴' },
+  { id: 'res',    file: '05-学习资源地图.md',             label: '⑥ 资源地图',  short: '书单' },
+  { id: 'resume', file: '06-改简历数据-手把手教程.md',     label: '⑦ 改简历',    short: '操作单' },
+]
+
+marked.setOptions({ gfm: true, breaks: false, headerIds: true, mangle: false })
+
+if (window.hljs) {
+  hljs.configure({ ignoreUnescapedHTML: true })
+}
+
+/* ---------- 给标题生成稳定的 id ---------- */
+function slug(text, used) {
+  let s = String(text).replace(/<[^>]+>/g, '').trim()
+    .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+  if (!s) s = 'sec'
+  let base = s, i = 2
+  while (used.has(s)) s = base + '-' + i++
+  used.add(s)
+  return s
+}
+
+/* ---------- 表格加滚动包裹（窄屏友好） ---------- */
+function wrapTables(root) {
+  root.querySelectorAll('table').forEach((t) => {
+    if (t.parentElement.classList.contains('table-wrap')) return
+    const w = document.createElement('div')
+    w.className = 'table-wrap'
+    t.parentNode.insertBefore(w, t)
+    w.appendChild(t)
+  })
+}
+
+/* ---------- 给 pre 标上语言名 ---------- */
+function tagLangs(root) {
+  root.querySelectorAll('pre > code').forEach((c) => {
+    const m = /language-(\w+)/.exec(c.className || '')
+    const pre = c.parentElement
+    pre.dataset.lang = m ? m[1] : ''
+  })
+}
+
+/* ---------- 高亮 ---------- */
+function highlight(root) {
+  if (!window.hljs) return
+  root.querySelectorAll('pre > code').forEach((c) => {
+    // mermaid / 纯文本块不高亮
+    if (/language-mermaid/.test(c.className || '')) return
+    try { hljs.highlightElement(c) } catch (e) { /* 高亮失败不影响阅读 */ }
+  })
+}
+
+/* ---------- 把 ```mermaid 块转成 <div class="mermaid"> ---------- */
+function extractMermaid(root) {
+  const blocks = []
+  root.querySelectorAll('pre > code.language-mermaid, pre > code.language-mmd').forEach((c) => {
+    const d = document.createElement('div')
+    d.className = 'mermaid'
+    d.textContent = c.textContent
+    c.parentElement.parentNode.replaceChild(d, c.parentElement)
+    blocks.push(d)
+  })
+  return blocks
+}
+
+/* ---------- 渲染完成后的统一处理 ---------- */
+function postProcess(root) {
+  wrapTables(root)
+  tagLangs(root)
+  const mermaidBlocks = extractMermaid(root)
+  highlight(root)
+  if (window.mermaid && mermaidBlocks.length) {
+    try { mermaid.run({ nodes: mermaidBlocks }) } catch (e) { console.warn('mermaid 渲染失败', e) }
+  }
+}
+
+/* ---------- 从渲染结果里抽目录 ---------- */
+function buildToc(root, docId) {
+  const list = document.getElementById('toc-list')
+  const used = new Set()
+  const items = []
+  root.querySelectorAll('h2, h3').forEach((h) => {
+    if (!h.id) h.id = docId + '-' + slug(h.textContent, used)
+    items.push({ id: h.id, text: h.textContent.replace(/^[①②③④⑤⑥⑦⑧⑨⑩]\s*/, '').trim(), level: h.tagName === 'H2' ? 2 : 3 })
+  })
+
+  // 只显示当前文档的目录：清空后重建
+  list.innerHTML = ''
+  const grp = document.createElement('div')
+  grp.className = 'toc__group'
+
+  // 「阅读指引」里的目录是手写的锚点清单，h2 少，就额外加上「回到顶部」
+  items.forEach((it) => {
+    const a = document.createElement('a')
+    a.href = '#' + it.id
+    a.textContent = it.text
+    a.className = it.level === 2 ? 'toc__h2' : 'toc__h3'
+    a.dataset.target = it.id
+    grp.appendChild(a)
+  })
+
+  if (!items.length) {
+    const p = document.createElement('div')
+    p.style.cssText = 'font-size:12.5px;color:var(--ink-3);padding:6px 8px'
+    p.textContent = '（本文无小节标题）'
+    grp.appendChild(p)
+  }
+  list.appendChild(grp)
+  return items
+}
+
+/* ---------- 滚动高亮当前小节 ---------- */
+let scrollSpyIds = []
+function setupScrollSpy() {
+  const links = Array.from(document.querySelectorAll('.toc a[data-target]'))
+  const map = new Map(links.map((a) => [a.dataset.target, a]))
+  scrollSpyIds = links.map((a) => a.dataset.target).filter((id) => document.getElementById(id))
+
+  const onScroll = () => {
+    // 进度条
+    const h = document.documentElement.scrollHeight - window.innerHeight
+    const p = h > 0 ? (window.scrollY / h) * 100 : 0
+    document.getElementById('progress').style.width = p + '%'
+
+    // 当前小节
+    let cur = null
+    for (const id of scrollSpyIds) {
+      const el = document.getElementById(id)
+      if (!el) continue
+      if (el.getBoundingClientRect().top <= 120) cur = id
+      else break
+    }
+    links.forEach((a) => a.classList.remove('active'))
+    if (cur && map.get(cur)) {
+      const a = map.get(cur)
+      a.classList.add('active')
+      // 让目录里的当前项滚进视野
+      const box = a.parentElement.parentElement
+      const ar = a.getBoundingClientRect(), br = box.getBoundingClientRect()
+      if (ar.top < br.top || ar.bottom > br.bottom) {
+        a.scrollIntoView({ block: 'nearest' })
+      }
+    }
+  }
+  window.removeEventListener('scroll', window.__spy)
+  window.__spy = onScroll
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()
+}
+
+/* ---------- 主流程 ---------- */
+const cache = new Map()
+
+async function loadDoc(d) {
+  if (cache.has(d.id)) return cache.get(d.id)
+  const res = await fetch(d.file, { cache: 'no-cache' })
+  if (!res.ok) throw new Error('HTTP ' + res.status + ' —— 找不到 ' + d.file)
+  const md = await res.text()
+  cache.set(d.id, md)
+  return md
+}
+
+async function show(d) {
+  // 按钮状态
+  document.querySelectorAll('#docbar button').forEach((b) => b.classList.toggle('on', b.dataset.id === d.id))
+
+  const root = document.getElementById('docs-root')
+  root.innerHTML = '<p style="color:var(--ink-3);padding:40px 0">正在载入 ' + d.file + ' …</p>'
+
+  let md
+  try {
+    md = await loadDoc(d)
+  } catch (e) {
+    root.innerHTML =
+      '<div style="padding:24px;border:2px solid var(--zhu);border-radius:6px;background:var(--zhu-soft)">' +
+      '<h2 style="margin-top:0;border:none;padding:0">⚠️ 载入失败</h2>' +
+      '<p><code>' + e.message + '</code></p>' +
+      '<p><strong>原因</strong>：如果你是直接双击打开这个 HTML（地址栏是 <code>file:///…</code>），' +
+      '浏览器会以安全为由禁止读取同目录的 <code>.md</code> 文件。</p>' +
+      '<p><strong>解决</strong>：在这个文件夹里起一个本地服务，再用 <code>http://</code> 打开。</p>' +
+      '<pre data-lang="bash"><code>cd /d E:\\fhgBLOG\\newtechnique\nnpx serve .\n' +
+      '# 然后打开它给出的 http://localhost:xxxx/手册.html</code></pre>' +
+      '<p>或者用 Python：<code>python -m http.server 8080</code> 然后开 ' +
+      '<code>http://localhost:8080/手册.html</code></p>' +
+      '<p style="margin-bottom:0">懒得起服务也没关系 —— <strong>同目录的 7 份 .md 文件本身就是完整内容</strong>，' +
+      '用任何 Markdown 阅读器（比如 VS Code 按 <code>Ctrl+Shift+V</code>）都能看。</p>' +
+      '</div>'
+    return
+  }
+
+  const html = marked.parse(md)
+  root.innerHTML = '<article class="doc on">' + html + '</article>'
+  const article = root.firstElementChild
+  postProcess(article)
+  buildToc(article, d.id)
+  setupScrollSpy()
+  window.scrollTo(0, 0)
+}
+
+/* ---------- 初始化 ---------- */
+function init() {
+  const bar = document.getElementById('docbar')
+  DOCS.forEach((d) => {
+    const b = document.createElement('button')
+    b.textContent = d.label
+    b.title = d.short + ' · ' + d.file
+    b.dataset.id = d.id
+    b.onclick = () => show(d)
+    bar.appendChild(b)
+  })
+  if (window.mermaid) {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#f4f1e8',
+        primaryTextColor: '#1c1a17',
+        primaryBorderColor: '#a8322d',
+        lineColor: '#8a8478',
+        fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif',
+        fontSize: '14px',
+      },
+      flowchart: { curve: 'basis', useMaxWidth: true },
+      securityLevel: 'loose',
+    })
+  }
+  const first = DOCS.find((d) => d.on) || DOCS[0]
+  show(first)
+}
+
+init()
+</script>
+</body>
+</html>

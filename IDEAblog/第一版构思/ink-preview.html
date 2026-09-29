@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水墨预览 · 万妖图录风</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   预览页样式 —— 只服务这一个文件，确认效果后会并入 style.css
+   ============================================================ */
+:root{
+  --xuan:#f2ede0;         /* 宣纸 */
+  --xuan-deep:#e7e0ce;
+  --mo:#1c1a17;           /* 焦墨 */
+  --mo-mid:#4a4640;
+  --mo-light:#8a8478;
+  --zhe:#a67c52;          /* 浅赭 */
+  --qing:#607a8a;         /* 石青 */
+  --zhu:#a8322d;          /* 朱砂 */
+  --font-brush:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif;
+  --font-serif:"Noto Serif SC","STSong","SimSun",serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--xuan);color:var(--mo);font-family:var(--font-serif);}
+body{
+  /* 宣纸底：用 CSS 渐变模拟纸的漫反射，页面上所有留白都靠它 */
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255,253,246,.85), rgba(242,237,224,0) 60%),
+    radial-gradient(90% 70% at 12% 100%, rgba(166,124,82,.055), rgba(242,237,224,0) 55%),
+    radial-gradient(80% 60% at 92% 88%, rgba(96,122,138,.05), rgba(242,237,224,0) 55%),
+    var(--xuan);
+  min-height:100vh;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+/* 纸纤维颗粒：一层极淡的重复噪点，让大留白不"平" */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  opacity:.5;
+  background-image:
+    repeating-linear-gradient(96deg, rgba(74,70,64,.030) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(7deg, rgba(74,70,64,.022) 0 1px, transparent 1px 11px);
+  mix-blend-mode:multiply;
+}
+.wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 clamp(20px,5vw,64px)}
+
+/* ---------------- 页眉：书法标题 + 远山装饰 ---------------- */
+header{padding:clamp(56px,10vh,110px) 0 clamp(28px,5vh,52px);position:relative}
+.hd-hill{position:absolute;left:0;right:0;top:0;height:100%;pointer-events:none;opacity:.5}
+.brand{font-family:var(--font-brush);font-size:clamp(34px,5.4vw,60px);letter-spacing:.14em;
+  color:var(--mo);opacity:.86;position:relative}
+.brand small{display:block;font-family:var(--font-serif);font-size:13px;letter-spacing:.42em;
+  color:var(--mo-light);margin-top:14px;opacity:.9}
+nav{display:flex;gap:clamp(18px,3vw,38px);margin-top:clamp(26px,4vh,40px);position:relative}
+nav a{
+  font-size:14px;letter-spacing:.24em;color:var(--mo-mid);text-decoration:none;
+  padding:7px 2px;position:relative;transition:color .4s ease;
+}
+/* 导航 hover：淡墨在字后扩散 */
+nav a::after{
+  content:"";position:absolute;left:50%;top:50%;width:12px;height:12px;
+  transform:translate(-50%,-50%) scale(0);border-radius:50%;
+  background:radial-gradient(circle, rgba(74,70,64,.20), rgba(74,70,64,.06) 55%, transparent 72%);
+  transition:transform .68s cubic-bezier(.22,.68,.3,1), opacity .68s ease;opacity:0;
+}
+nav a:hover{color:var(--mo)}
+nav a:hover::after{transform:translate(-50%,-50%) scale(6.4);opacity:1}
+nav a span{position:relative;z-index:1}
+
+/* ---------------- 正文：素雅排版，宽松间距 ---------------- */
+.intro{padding:clamp(18px,3vh,34px) 0 clamp(30px,5vh,52px);max-width:640px}
+.intro p{font-size:15.5px;line-height:2.35;color:var(--mo-mid);letter-spacing:.045em}
+.intro p + p{margin-top:1.5em}
+.intro .lead{font-size:17px;line-height:2.4;color:var(--mo)}
+
+/* ---------------- 棋盘区 ---------------- */
+.board-sec{padding:clamp(26px,5vh,60px) 0 clamp(40px,7vh,86px);position:relative}
+.board-hd{display:flex;align-items:baseline;gap:16px;margin-bottom:clamp(14px,2.4vh,24px)}
+.board-hd h2{font-family:var(--font-brush);font-size:clamp(21px,2.6vw,27px);
+  font-weight:400;letter-spacing:.2em;color:var(--mo);opacity:.88}
+.board-hd i{font-style:normal;font-size:12.5px;letter-spacing:.3em;color:var(--mo-light)}
+
+.board-frame{
+  position:relative;
+  width:100%;max-width:760px;margin:0 auto;
+  aspect-ratio:1/1;
+}
+#ink-board{position:absolute;inset:0;width:100%;height:100%;display:block;
+  border-radius:5px;cursor:default}
+
+/* 棋盘下方的说明：当前选中哪一枚 */
+.pick-note{
+  max-width:760px;margin:clamp(16px,2.6vh,26px) auto 0;
+  min-height:56px;text-align:center;
+  font-size:13.5px;letter-spacing:.1em;color:var(--mo-light);
+  transition:opacity .5s ease;
+}
+.pick-note b{display:block;font-family:var(--font-brush);font-size:19px;font-weight:400;
+  color:var(--mo);letter-spacing:.14em;margin-bottom:6px}
+.pick-note.hide{opacity:0}
+
+/* ---------------- 想法卡片：水墨线条，无实底 ---------------- */
+.ideas{padding:clamp(30px,5vh,64px) 0 clamp(60px,10vh,120px)}
+.ideas ul{list-style:none;display:grid;gap:clamp(20px,3vh,34px)}
+.ideas li{position:relative;padding-left:26px}
+/* 左侧一小道墨线，代替卡片边框 */
+.ideas li::before{
+  content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;
+  background:linear-gradient(180deg, rgba(74,70,64,.30), rgba(74,70,64,.05));
+  border-radius:2px;
+}
+.ideas h3{font-family:var(--font-brush);font-size:21px;font-weight:400;
+  letter-spacing:.12em;color:var(--mo);margin-bottom:9px}
+.ideas h3 a{color:inherit;text-decoration:none}
+.ideas p{font-size:14px;line-height:2.1;color:var(--mo-mid);max-width:600px}
+.ideas .meta{margin-top:9px;font-size:12px;letter-spacing:.22em;color:var(--mo-light)}
+
+footer{padding:0 0 clamp(48px,8vh,90px);text-align:center;
+  font-size:12px;letter-spacing:.3em;color:var(--mo-light);opacity:.8}
+
+@media (max-width:640px){
+  .board-frame{aspect-ratio:1/1}
+  .intro p{font-size:15px;line-height:2.2}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <!-- 远山：三笔淡墨，压在标题后面 -->
+    <svg class="hd-hill" viewBox="0 0 1000 280" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,210 C90,150 150,178 220,138 C290,98 340,150 410,124 C470,102 520,148 600,120 C680,92 740,140 820,112 C890,88 950,132 1000,116 L1000,280 L0,280 Z"
+            fill="rgba(138,132,120,.16)"/>
+      <path d="M0,236 C120,196 200,222 300,186 C400,150 470,196 570,172 C660,150 730,188 830,164 C900,148 960,176 1000,164 L1000,280 L0,280 Z"
+            fill="rgba(74,70,64,.09)"/>
+      <path d="M180,198 C260,166 320,186 400,162 C470,142 520,172 600,152"
+            fill="none" stroke="rgba(74,70,64,.20)" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>
+
+    <h1 class="brand">一念未落<small>IDEAS &amp; INK</small></h1>
+
+    <nav>
+      <a href="#"><span>首页</span></a>
+      <a href="#"><span>想法集</span></a>
+      <a href="#"><span>关于</span></a>
+    </nav>
+  </header>
+
+  <section class="intro">
+    <p class="lead">想法像未落定的棋，一颗一颗摆在纸上，等着被走成一路局势。</p>
+    <p>这里收着我随手记下的念头：做一半的页面、写了几行的题词、还没想清楚的几张图。它们颜色深浅不一，有的是浓墨，有的只是一笔淡痕。</p>
+  </section>
+
+  <section class="board-sec">
+    <div class="board-hd">
+      <h2>一局墨棋</h2>
+      <i>浓墨为已成 · 留白为未落</i>
+    </div>
+
+    <div class="board-frame">
+      <canvas id="ink-board"></canvas>
+    </div>
+
+    <div class="pick-note hide" id="pick-note"></div>
+  </section>
+
+  <section class="ideas">
+    <ul id="idea-list"></ul>
+  </section>
+
+  <footer>一念未落 · 墨迹未干</footer>
+</div>
+
+<script src="assets/ideas-data.js"></script>
+<script src="assets/ink-board.js"></script>
+<script>
+(function(){
+  var IDEAS = window.IDEAS || [];
+
+  /* 预览页需要至少 4 个棋子才看得出浓淡对比，
+     真实数据不足时补几枚占位（只在预览里用，不进 ideas-data.js） */
+  var preview = IDEAS.slice();
+  var filler = [
+    {title:"残卷补遗", summary:"把散在便签、截图、聊天记录里的碎片收拢成一张图。", status:"seed"},
+    {title:"墨色试验", summary:"同一块墨，在不同水量下能出多少层次。", status:"growing"},
+    {title:"山门夜话", summary:"写一段山门前的闲谈，只当练笔。", status:"done"},
+    {title:"纸纹采集", summary:"收集手工纸的纹路，做成可复用的贴图。", status:"seed"},
+    {title:"题字留白", summary:"练习把字写在最该在的位置。", status:"growing"},
+    {title:"归墟记", summary:"一个关于海的短篇，慢慢写。", status:"done"},
+    {title:"云纹走笔", summary:"传统云纹的几种画法对比。", status:"seed"},
+    {title:"石青与赭", summary:"冷色与暖色在两笔之间的平衡。", status:"growing"},
+    {title:"断笔集", summary:"故意写断的笔画，反而更活。", status:"done"},
+    {title:"烟云稿", summary:"雾感的做法：不是模糊，是层次。", status:"seed"},
+    {title:"印石手记", summary:"朱砂印的位置比内容更挑人。", status:"growing"},
+    {title:"未落之子", summary:"一直没决定要不要做的那个想法。", status:"seed"},
+    {title:"枯笔练习", summary:"飞白的密度控制。", status:"done"},
+    {title:"远山三叠", summary:"远山只要三层就够，多了就挤。", status:"seed"}
+  ];
+  for (var i = 0; preview.length < 16 && i < filler.length; i++) {
+    var f = filler[i];
+    f.slug = "preview-" + i;
+    f.href = "";
+    f.date = "2026-09-27";
+    f.tags = ["预览"];
+    preview.push(f);
+  }
+
+  var canvas = document.getElementById("ink-board");
+  var board = window.InkBoard.init(canvas, preview);
+
+  var note = document.getElementById("pick-note");
+  board.onPick = function (idea, idx) {
+    var stZh = { seed: "萌芽", growing: "生长", done: "已成" }[idea.status] || "萌芽";
+    var kind = idea.status === "done" ? "浓墨" : "留白";
+    note.className = "pick-note";
+    note.innerHTML = "<b>" + idea.title + "</b>" + stZh + " · " + kind +
+      (idea.href ? " · 再点一次进入" : " · 预览占位");
+
+    /* 点了有 href 的，第二下跳转；预览占位只做动效 */
+    if (idea.href) {
+      var key = "__ink_sel_" + idx;
+      if (window[key]) window.location.href = idea.href;
+      window[key] = true;
+      setTimeout(function () { window[key] = false; }, 1400);
+    }
+  };
+
+  /* 列表区渲染 */
+  var list = document.getElementById("idea-list");
+  var stZh2 = { seed: "萌芽", growing: "生长", done: "已成" };
+  preview.forEach(function (idea, i) {
+    var li = document.createElement("li");
+    var a = idea.href ? '<a href="' + idea.href + '">' + idea.title + "</a>" : idea.title;
+    li.innerHTML = "<h3>" + a + "</h3><p>" + idea.summary + "</p>" +
+      '<div class="meta">' + (stZh2[idea.status] || "萌芽") + " · " + (idea.date || "") + "</div>";
+    list.appendChild(li);
+  });
+})();
+</script>
+</body>
+</html>

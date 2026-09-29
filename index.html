@@ -15,6 +15,21 @@
       <nav class="site-nav" data-page-node-id="SEgkhNrRK3eOwDEMW5PT1M">
         <a href="index.html" data-page-node-id="MIVlPxeSsxtxK7cveQMWFh">首页</a>
         <a href="about.html" data-page-node-id="jUfDH9kEPFif9yMtxolVFV">关于</a>
+        <!--
+          「想法」= 另一个子站（IDEAblog 水墨站），不是本目录的页面。
+
+          为什么写 `IDEAblog/index.html` 这种相对路径，而不是
+          `file:///E:/fhgBLOG/IDEAblog/index.html` 这种绝对路径：
+            绝对路径只在「你这台电脑、这个盘符、这个文件夹」下有效。
+            一旦把网站传上 Netlify，或者把文件夹改名 / 挪到别的盘，
+            它就会指向一个不存在的位置 —— 而且**换台电脑就必然挂**。
+          相对路径是"从当前这个文件出发往哪走"，跟着文件夹一起搬家，
+          双击打开、本地 http 服务、线上部署三种情况都能用。
+
+          线上部署时 netlify.toml 已经把 /idea/ 重写到 IDEAblog 目录
+          （见 netlify.toml 里的 [[redirects]]），所以线上也能通。
+        -->
+        <a href="IDEAblog/index.html">想法</a>
       </nav>
     </header>
 

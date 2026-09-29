@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0d0d0f" />
+    <!--
+      ⚠️ 这里用 ./favicon.svg 而不是 /favicon.svg。
+      开头的 / 表示「网站根目录」，用 http:// 打开时没问题，
+      但双击 dist/index.html（file:// 协议）时会去找 file:///E:/favicon.svg
+      —— 磁盘根目录，当然找不到。
+      写成 ./ 就是「跟当前 HTML 同一个文件夹」，
+      Vite 打包时会一并带上 base 配置（vite.config.js 里的 base: './'）。
+    -->
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>3D Portfolio · 素描长廊</title>
+
+    <!--
+      手绘风格字体 · 已彻底本地化。
+
+      历史一：原来是 Google Fonts 外链
+        <link href="https://fonts.googleapis.com/css2?family=Cabin+Sketch...">
+        —— 断网就退回系统字体，且仍是「外部渲染依赖」。
+
+      历史二：改成引 public/fonts/fonts.css
+        <link rel="stylesheet" href="./fonts/fonts.css">
+        —— **这样是错的！**
+        public/ 下的文件 Vite 只做原样拷贝，不参与打包，
+        viteSingleFile 看不见它 → 它仍然是外链；
+        而 file:// 下**外链 CSS 会被 CORS 拦掉**（和 ES module 同一条规则），
+        整份 @font-face 失效，字体静默退回系统字体。
+        页面不白屏、只有控制台一条 error，极容易漏掉。
+        （这一步是实测发现的，见 v2 验证记录。）
+
+      现在：字体以 base64 形式内联进 src/styles/_fonts.scss，
+            由 global.scss `@use 'fonts'` 引入 → 走 Vite 构建 → 被内联进 HTML。
+            所以这里**不需要任何 <link> 了**。
+    -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

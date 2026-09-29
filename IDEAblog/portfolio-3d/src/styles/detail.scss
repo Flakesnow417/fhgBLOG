@@ -1,0 +1,426 @@
+/* ==========================================================================
+   Module 4 · 画作详情弹窗
+   --------------------------------------------------------------------------
+   视觉概念：一张**从画框里抽出来的卡纸**。
+   它不是常见的"居中模态框"，而是偏右侧的一张竖长纸片 ——
+   因为用户刚点的是墙上的一幅画，卡片从那一侧抽出来在空间上更连贯。
+
+   动画的核心是「回正」：卡片初始带一点旋转、稍微偏下、透明度为 0，
+   展开时旋转回 0 并淡入，模拟纸片被抽出来后在手里摆正。
+   退出则反向播放，并且比进入快（用户已经做完决定，不该再等）。
+   ========================================================================== */
+
+.detail {
+  position: fixed;
+  inset: 0;
+  /* 遮罩：半透明墨色 + 一层极淡的纸色，让底下的长廊依然可辨，
+     但要明显"退到后面去"。不用 backdrop-filter ——
+     在无头渲染与部分 GPU 上会把半透明层扩散到整屏（踩过这个坑）。 */
+  background: linear-gradient(
+    180deg,
+    rgba(20, 19, 17, 0.42) 0%,
+    rgba(20, 19, 17, 0.52) 100%
+  );
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: var(--z-overlay);
+  /* 进入/退出动画挂在 .detail 上做整体淡入 */
+  opacity: 1;
+  transition: opacity 0.26s ease;
+
+  animation: detail-veil-in 0.26s ease both;
+}
+
+.detail--closing {
+  opacity: 0;
+  animation: none;
+}
+
+@keyframes detail-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   卡纸本体
+   -------------------------------------------------------------------------- */
+.detail__panel {
+  position: relative;
+  width: min(720px, calc(100vw - 48px));
+  max-height: min(78vh, 760px);
+  display: flex;
+  flex-direction: column;
+
+  background: var(--paper);
+  color: var(--ink);
+
+  /* 用一条深色描边 + 偏移阴影模拟"纸片叠在纸上"的厚度，
+     而不是用大范围柔光阴影（柔光在白场景里会脏）。 */
+  border: 1.5px solid var(--ink);
+  box-shadow: 10px 12px 0 rgba(22, 22, 26, 0.16);
+
+  padding: 40px 44px 0;
+
+  /* 立即可聚焦但不显示聚焦环 —— 焦点环只在键盘导航时出现 */
+  outline: none;
+
+  /* 动画：从右下抽出来 + 回正 */
+  transform-origin: 60% 40%;
+  animation: detail-card-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.detail--closing .detail__panel {
+  animation: detail-card-out 0.22s ease-in both;
+}
+
+@keyframes detail-card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(28px, 22px, 0) rotate(1.4deg) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes detail-card-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(16px, 14px, 0) rotate(0.9deg) scale(0.98);
+  }
+}
+
+/* 纸纤维纹理：两层交叉的极淡条纹，和开场那张纸同一套语言 */
+.detail__panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      91deg,
+      rgba(0, 0, 0, 0.012) 0px,
+      rgba(0, 0, 0, 0.012) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    repeating-linear-gradient(
+      3deg,
+      rgba(0, 0, 0, 0.008) 0px,
+      rgba(0, 0, 0, 0.008) 1px,
+      transparent 1px,
+      transparent 5px
+    );
+}
+
+/* 左侧装订条：一条 accent 色的窄边，像档案卡的信纸线 */
+.detail__binding {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--detail-accent, var(--accent));
+}
+
+/* 关闭按钮 */
+.detail__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+
+  background: transparent;
+  border: 1.5px solid transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 0;
+
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+    background: rgba(22, 22, 26, 0.04);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--detail-accent, var(--accent));
+    outline-offset: 2px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   头部
+   -------------------------------------------------------------------------- */
+.detail__head {
+  flex: 0 0 auto;
+  padding-bottom: 18px;
+  border-bottom: 1.5px solid rgba(22, 22, 26, 0.16);
+}
+
+.detail__eyebrow {
+  margin: 0 0 10px;
+  font-family: var(--font-sketch);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: var(--detail-accent, var(--accent));
+  text-transform: uppercase;
+}
+
+.detail__title {
+  margin: 0;
+  font-family: var(--font-display);
+  /* 手绘标题字体在小字号下发虚，所以给一个不太小的下限 */
+  font-size: clamp(30px, 4.4vw, 46px);
+  line-height: 1.06;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.detail__caption {
+  margin: 10px 0 0;
+  font-family: var(--font-sketch);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  opacity: 0.82;
+}
+
+/* --------------------------------------------------------------------------
+   正文（这部分要能滚动，且滚动条要跟着卡片走）
+   -------------------------------------------------------------------------- */
+.detail__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain; /* 滚到底不要把滚动传给底层页面 */
+  padding: 22px 4px 22px 0;
+
+  /* 自定义滚动条：默认的那种在纸色卡片上非常突兀 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 22, 26, 0.28) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(22, 22, 26, 0.24);
+    border-radius: 0;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(22, 22, 26, 0.4);
+  }
+}
+
+.detail__lead {
+  margin: 0 0 24px;
+  font-size: 16.5px;
+  line-height: 1.75;
+  color: var(--ink);
+  /* 引文感的左侧强调线 */
+  padding-left: 16px;
+  border-left: 3px solid var(--detail-accent, var(--accent));
+}
+
+.detail__block {
+  margin-bottom: 26px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.detail__heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin: 0 0 12px;
+  font-family: var(--font-sketch);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+/* 标题右侧延伸出去的一条墨线，比单独一个标题更有"排版"感 */
+.detail__headingRule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    rgba(22, 22, 26, 0.3),
+    rgba(22, 22, 26, 0.04)
+  );
+}
+
+.detail__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detail__item {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 10px;
+
+  font-size: 15px;
+  line-height: 1.72;
+  color: var(--ink-soft);
+  text-wrap: pretty;
+
+  /* 用一个小方点代替圆点 —— 圆点在铅笔风格里太"现代"了 */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 0.62em;
+    width: 6px;
+    height: 1.5px;
+    background: var(--detail-accent, var(--accent));
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* 标签 + 值 的形式（如 邮箱 / hello@example.com） */
+.detail__item--labeled {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.detail__label {
+  font-family: var(--font-sketch);
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+.detail__value {
+  color: var(--ink);
+  /* 邮箱、链接这类内容要能选中复制 */
+  user-select: text;
+  word-break: break-word;
+}
+
+/* --------------------------------------------------------------------------
+   底部
+   -------------------------------------------------------------------------- */
+.detail__foot {
+  flex: 0 0 auto;
+  padding: 14px 0 18px;
+  border-top: 1.5px solid rgba(22, 22, 26, 0.16);
+}
+
+.detail__hintPress {
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+
+  kbd {
+    display: inline-block;
+    margin: 0 3px;
+    padding: 1px 6px;
+    border: 1px solid rgba(22, 22, 26, 0.28);
+    border-bottom-width: 2px;
+    font-family: inherit;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   窄屏：卡片铺满、内边距收紧
+   -------------------------------------------------------------------------- */
+@media (max-width: 720px) {
+  .detail {
+    align-items: flex-end;
+  }
+
+  .detail__panel {
+    width: 100vw;
+    max-height: 88vh;
+    padding: 32px 22px 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: 0 -8px 0 rgba(22, 22, 26, 0.12);
+
+    /* 手机上从底部滑上来更符合直觉 */
+    animation: detail-card-in-mobile 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .detail--closing .detail__panel {
+    animation: detail-card-out-mobile 0.2s ease-in both;
+  }
+
+  .detail__item--labeled {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+@keyframes detail-card-in-mobile {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes detail-card-out-mobile {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   降级：减少动态效果
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .detail,
+  .detail__panel,
+  .detail--closing .detail__panel {
+    animation: none;
+    transition: none;
+  }
+  .detail--closing {
+    opacity: 0;
+  }
+}

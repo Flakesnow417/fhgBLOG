@@ -1,0 +1,156 @@
+/* ==========================================================================
+   Module 2 · 开场纸张撕裂
+   --------------------------------------------------------------------------
+   结构：
+     .paper-tear            全屏遮罩容器
+       .paper-tear__half   左/右两半纸（clip-path 裁出互补的毛边）
+         .paper-tear__line 叠在纸上的裂缝墨线
+       .paper-tear__title  纸上的标题，随纸一起被撕开
+   ========================================================================== */
+
+.paper-tear {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-preloader);
+  overflow: hidden;
+
+  /* 初始由 effect 里 gsap.set 控制，这里给个兜底：默认可见 */
+  display: block;
+
+  /* 遮罩期间禁止选中文字 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   半张纸
+   -------------------------------------------------------------------------- */
+.paper-tear__half {
+  position: absolute;
+  inset: 0;
+  /* 注意：这里不要常驻 will-change: transform。
+     它会让两半纸各自成为一个独立合成层，而这两半是"整屏大小"的，
+     在部分渲染环境下会把图层的边界/圆角错误地作用到整个画面。
+     撕开动画本身只有 1.25s，靠 GSAP 的 transform 已经足够流畅，
+     不需要提前分层。 */
+  backface-visibility: hidden;
+
+  /* 纸色基底 + 细微的纤维纹理：
+     两层 repeating-linear-gradient 交叉，模拟纸浆纤维方向。
+     用低透明度是为了不要喧宾夺主，只在近看时提供质感。 */
+  background-color: var(--paper);
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      rgba(0, 0, 0, 0.014) 0px,
+      rgba(0, 0, 0, 0.014) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    repeating-linear-gradient(
+      2deg,
+      rgba(0, 0, 0, 0.01) 0px,
+      rgba(0, 0, 0, 0.01) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+}
+
+/* 靠近撕裂缝的一侧加一道内阴影，制造纸张厚度被撕开的立体感 */
+.paper-tear__half--left {
+  box-shadow: inset -18px 0 32px -20px rgba(0, 0, 0, 0.42);
+}
+
+.paper-tear__half--right {
+  box-shadow: inset 18px 0 32px -20px rgba(0, 0, 0, 0.42);
+}
+
+/* --------------------------------------------------------------------------
+   裂缝墨线
+   -------------------------------------------------------------------------- */
+.paper-tear__line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* --------------------------------------------------------------------------
+   纸上的标题
+   -------------------------------------------------------------------------- */
+.paper-tear__title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+
+  /* 标题横跨裂缝，撕开后会被"扯断" —— 这是刻意的效果 */
+  opacity: 0.92;
+}
+
+.paper-tear__title-main {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 8vw, 110px);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+
+.paper-tear__title-sub {
+  font-family: var(--font-sketch);
+  font-size: clamp(13px, 1.6vw, 19px);
+  letter-spacing: 0.24em;
+  color: var(--ink-soft);
+  opacity: 0.72;
+}
+
+/* --------------------------------------------------------------------------
+   加载提示：贴在底部的一行呼吸文字
+   由父级在纸张上层单独渲染（不随纸撕走），所以放在这里做共享样式
+   -------------------------------------------------------------------------- */
+.paper-tear__loading {
+  position: fixed;
+  left: 50%;
+  bottom: 42px;
+  transform: translateX(-50%);
+  z-index: calc(var(--z-preloader) + 1);
+
+  font-family: var(--font-sketch);
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: var(--ink-soft);
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+
+  animation: paper-breathe 1.9s ease-in-out infinite;
+}
+
+@keyframes paper-breathe {
+  0%,
+  100% {
+    opacity: 0.28;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   降级：系统设置「减少动态效果」时，跳过撕裂动画
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .paper-tear__half {
+    backface-visibility: visible;
+  }
+  .paper-tear__loading {
+    animation: none;
+    opacity: 0.5;
+  }
+}

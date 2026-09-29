@@ -1,0 +1,41 @@
+/*
+ * 手绘字体 · 本地自足版
+ *
+ * 原本这几种字体是从 Google Fonts 外链引用的（见 index.html 的历史注释）。
+ * 为了让 dist/index.html 真正「双击即开、断网也能看」，字体已下载到同目录。
+ *
+ * ⚠️ 单文件打包（vite-plugin-singlefile）下，这个 CSS 会被内联进 HTML，
+ *    但 woff2 文件**仍然以 ./fonts/xxx.woff2 相对路径引用**——
+ *    也就是说 dist 文件夹要整个带走，不能只拷 index.html 一个文件。
+ *    （若要让单文件连字体也自足，需把 woff2 转 base64 内联，
+ *      体积会增加约 1.33 倍，当前 3 款字体共约 60 KB，代价可接受，
+ *      但还没做——留作后续优化。）
+ */
+@font-face {
+  font-family: 'Cabin Sketch';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./cabin-sketch-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cabin Sketch';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./cabin-sketch-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredericka the Great';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fredericka-the-great-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rubik Scribble';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./rubik-scribble-400.woff2') format('woff2');
+}

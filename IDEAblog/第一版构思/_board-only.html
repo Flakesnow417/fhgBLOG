@@ -1,0 +1,32 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f2ede0;display:flex;align-items:center;justify-content:center;height:100vh}
+#b{width:1000px;height:1000px;display:block}
+</style></head><body>
+<canvas id="b"></canvas>
+<script src="/assets/ideas-data.js"></script>
+<script src="/assets/ink-board.js"></script>
+<script>
+var ideas=[];
+["残卷补遗|把散在便签、截图里的碎片收拢成一张图。|seed",
+ "墨色试验|同一块墨，不同水量下能出多少层次。|growing",
+ "山门夜话|写一段山门前的闲谈，只当练笔。|done",
+ "纸纹采集|收集手工纸的纹路，做成可复用贴图。|seed",
+ "题字留白|练习把字写在最该在的位置。|growing",
+ "归墟记|一个关于海的短篇，慢慢写。|done",
+ "云纹走笔|传统云纹的几种画法对比。|seed",
+ "石青与赭|冷色与暖色在两笔之间的平衡。|growing",
+ "断笔集|故意写断的笔画，反而更活。|done",
+ "烟云稿|雾感的做法：不是模糊，是层次。|seed",
+ "印石手记|朱砂印的位置比内容更挑人。|growing",
+ "未落之子|一直没决定要不要做的那个想法。|seed",
+ "枯笔练习|飞白的密度控制。|done",
+ "远山三叠|远山只要三层就够，多了就挤。|seed",
+ "笔断意连|断处比连处更要有气。|growing",
+ "留白计|空出来的地方才是主角。|done"].forEach(function(s,i){
+  var p=s.split("|");
+  ideas.push({slug:"p"+i,title:p[0],summary:p[1],status:p[2],date:"2026-09-27",tags:[],href:""});
+});
+window.InkBoard.init(document.getElementById("b"),ideas);
+</script></body></html>

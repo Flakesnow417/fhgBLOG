@@ -1,0 +1,316 @@
+{
+  "summary": {
+    "meshCount": 109,
+    "visibleCount": 109,
+    "withHandlers": 12,
+    "interactive": [
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          -4.45,
+          2.15,
+          32
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          4.45,
+          2.15,
+          28
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          -4.45,
+          2.15,
+          24
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          4.45,
+          2.15,
+          20
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          -4.45,
+          2.15,
+          12
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          4.45,
+          2.15,
+          8
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          -4.45,
+          2.15,
+          4
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          4.45,
+          2.15,
+          0
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      }
+    ],
+    "hitTargetCount": 12,
+    "hitTargets": [
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          -4.45,
+          2.15,
+          32
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          4.45,
+          2.15,
+          28
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          -4.45,
+          2.15,
+          24
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          4.45,
+          2.15,
+          20
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          -4.45,
+          2.15,
+          12
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      },
+      {
+        "geo": "PlaneGeometry",
+        "w": 2.13,
+        "h": 1.596,
+        "pos": [
+          4.45,
+          2.15,
+          8
+        ],
+        "visible": true,
+        "mat": "MeshBasicMaterial",
+        "opacity": 0,
+        "colorWrite": false,
+        "hasMap": false,
+        "handlers": [
+          "onPointerOver",
+          "onPointerOut",
+          "onClick"
+        ],
+        "eventCount": 3
+      }
+    ],
+    "size": {
+      "width": 1248,
+      "height": 697
+    },
+    "events": {
+      "hasEvents": true,
+      "connected": false,
+      "handlerObjects": null
+    }
+  },
+  "exceptions": []
+}

@@ -1,0 +1,400 @@
+{
+ "meshes": 97,
+ "raycastable": 97,
+ "samples": [
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    -4.5,
+    2.6,
+    24
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": false,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    4.5,
+    2.6,
+    24
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": false,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    -4.48,
+    2.15,
+    32
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": false,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    -4.47,
+    2.15,
+    32
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": false,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    -4.46,
+    2.15,
+    32
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": true,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    -4.46,
+    2.15,
+    32
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": true,
+   "depthWrite": false,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    -4.46,
+    2.15,
+    32
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": true,
+   "depthWrite": false,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    4.48,
+    2.15,
+    28
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": false,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    4.47,
+    2.15,
+    28
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": false,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    4.46,
+    2.15,
+    28
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": true,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    4.46,
+    2.15,
+    28
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": true,
+   "depthWrite": false,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    4.46,
+    2.15,
+    28
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": true,
+   "depthWrite": false,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    -4.48,
+    2.15,
+    24
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": false,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  },
+  {
+   "type": "PlaneGeometry",
+   "wp": [
+    -4.47,
+    2.15,
+    24
+   ],
+   "visible": true,
+   "mat": "MeshBasicMaterial",
+   "transparent": false,
+   "depthWrite": true,
+   "side": 0,
+   "handlerKeys": [],
+   "eventCount": 0,
+   "r3fKeys": [
+    "root",
+    "type",
+    "parent",
+    "children",
+    "props",
+    "object",
+    "eventCount",
+    "handlers",
+    "previousVisible",
+    "isHidden"
+   ]
+  }
+ ],
+ "canvasRect": [
+  0,
+  0,
+  1248,
+  697
+ ],
+ "canvasPointerEvents": "auto",
+ "wrapTag": "DIV",
+ "wrapRect": [
+  0,
+  0,
+  1248,
+  697
+ ],
+ "wrapPointerEvents": "auto",
+ "eventsEnabled": true
+}

@@ -1,0 +1,196 @@
+/* ==========================================================================
+   全局样式 / 设计变量
+   风格基调：铅笔素描 + 旧纸 + 极简，黑灰为主，彩色留给 hover 上色。
+   ========================================================================== */
+
+/* 手绘字体的 @font-face（base64 内联，由脚本生成）。
+   必须放在样式入口最前面，且**不能用 <link> 引 public/ 下的文件**——
+   原因见 _fonts.scss 顶部的长注释：file:// 下外链 CSS 会被 CORS 拦，
+   字体静默退回系统字体。 */
+@use 'fonts';
+
+:root {
+  /* --- 纸张与石墨 --- */
+  --paper: #efeae0;
+  --paper-warm: #e5ded1;
+  --paper-shadow: #c9c0af;
+  --ink: #16161a;
+  --ink-soft: #3a3a42;
+  --ink-faint: #8a8a93;
+
+  /* --- 上色后的强调色（hover 时才会出现） --- */
+  --accent: #c8532f;
+  --accent-cool: #2f6f8f;
+
+  /* --- 字体 --- */
+  --font-sketch: 'Cabin Sketch', 'Segoe UI', sans-serif;
+  --font-display: 'Fredericka the Great', 'Cabin Sketch', serif;
+  --font-scribble: 'Rubik Scribble', 'Cabin Sketch', cursive;
+  --font-body: 'Cabin Sketch', ui-sans-serif, system-ui, sans-serif;
+
+  /* --- 层级 --- */
+  --z-canvas: 1;
+  --z-ui: 10;
+  --z-overlay: 50;
+  --z-preloader: 100;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+html,
+body {
+  overflow: hidden; /* 3D 场景全屏，禁止页面滚动 */
+  background: var(--ink);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  position: relative;
+}
+
+/* --------------------------------------------------------------------------
+   关键：R3F <Canvas> 的尺寸链（这里踩过两次坑，务必看完再改）
+   --------------------------------------------------------------------------
+   症状一：页面看着全黑，只有一个几乎看不见的细条。
+     原因：R3F 的 <Canvas> 会在 #root 里插一层 wrapper div，并给内部
+     <canvas> 设 width/height:100%。如果这一层 wrapper 没有确定高度，
+     它会塌缩成内容默认高度（Chrome 下约 150px），于是 3D 画面被压成一条缝。
+     处理：把整条尺寸链显式撑满。
+
+   症状二（更隐蔽，改的时候差点又踩）：右下角那个操作提示 .boot-badge
+     忽然变成一块高 697px、宽 320px 的纸色大板，把右半边画面糊住了。
+     原因：第一次的修复用的是**结构选择器** `#root > div > div { height:100% }`，
+     而 .boot-badge 恰好也是 `.app` 下面的一个直接 div 子元素，
+     于是命中了这条规则、被拉成满屏高。而 position:fixed + right/bottom
+     一旦同时解析出 top 与 left（因为高度被撑满），元素就铺满了整个视口。
+     处理：**不要再依赖结构选择器**。给 R3F 的 wrapper 加一个明确的类
+     （通过 <Canvas> 的 className 传进去，R3F 会把它加到 wrapper div 上），
+     只对这个类设尺寸。凡是"按层级猜选择器"的写法，在组件数量一多之后
+     一定会误伤 —— 这个坑就是代价。
+   -------------------------------------------------------------------------- */
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* R3F 生成的 canvas 容器：靠 className 精确定位，不用结构选择器 */
+.r3f-fill {
+  width: 100%;
+  height: 100%;
+}
+
+canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none; /* 防止移动端拖动时触发页面手势 */
+  outline: none;
+}
+
+/* 光标
+   --------------------------------------------------------------------------
+   原本这里写的是 url('/cursors/cursor-*.webp') 指向自定义铅笔光标，
+   但那些资源文件并不存在 —— 浏览器会静默回退，功能上没事，
+   可 Vite 构建时会对每个不存在的 url() 报一条 "didn't resolve" 警告。
+   既然没有资源，就不要再引用：等到真的做出光标资源时，
+   再把 url() 加回来并同时把文件放进 public/cursors/。 */
+body {
+  cursor: default;
+}
+
+a,
+button,
+[role='button'] {
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   漫游操作提示（右下角）
+   --------------------------------------------------------------------------
+   这个角标踩过两个坑，两条都不要改回去：
+
+   1. 不要用 left:50% + transform:translateX(-50%)。
+      transform 会让元素成为新的包含块；一旦它因为别的原因尺寸算错，
+      layout overflow 会把整个 viewport 撑出滚动状态，
+      而它的圆角 + 纸色底会被 Chrome 一起合成进整屏截图，
+      表现为「整屏被一层米白糊住、四角还是圆的」。
+      直接给 right / bottom 做锚点，不使用 transform。
+
+   2. 不要用 backdrop-filter。
+      它会创建独立合成层，在无头渲染下同样会把半透明底扩散到整个画面。
+   -------------------------------------------------------------------------- */
+.boot-badge {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: var(--z-ui);
+  /* 显式给高度，别让任何遗产规则把 fixed 元素拉成满屏 ——
+     只要 top 与 bottom 同时被解析出来，fixed 元素就会纵向铺满。 */
+  height: auto;
+  max-width: min(320px, calc(100vw - 40px));
+  padding: 8px 16px;
+  border: 1.5px solid var(--ink-faint);
+  border-left: 4px solid var(--accent);
+  background: var(--paper);
+  font-family: var(--font-sketch);
+  font-size: 13px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  user-select: none;
+  pointer-events: none;
+
+  b {
+    color: var(--accent);
+    font-weight: 700;
+  }
+}
+
+/* 返回首页
+   --------------------------------------------------------------------------
+   3D 长廊是独立工程，从 index.html 跳进来之后没有出口。
+   给一个固定在左上角的小链接，样式沿用纸张+墨线的语言。
+   ⚠️ 与 .boot-badge 同理：position:fixed 时**不要**同时给 top 和 bottom，
+      并且显式写 height:auto，否则一旦有别的规则给出高度，元素会纵向铺满视口。
+   -------------------------------------------------------------------------- */
+.back-home {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: var(--z-ui);
+  height: auto;
+  padding: 6px 14px;
+  border: 1.5px solid var(--ink-faint);
+  background: var(--paper);
+  font-family: var(--font-sketch);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  text-decoration: none;
+  user-select: none;
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+}
