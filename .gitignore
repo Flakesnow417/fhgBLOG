@@ -11,5 +11,13 @@ node_modules/
 dist/
 .astro/
 
+# ⚠️ 例外：IDEAblog/portfolio-3d 的构建产物要发布，必须进仓库
+#    为什么：Netlify 只是"把仓库里的文件端出来"，它不会替我们跑 npm run build。
+#            所以 3D 长廊的 dist/index.html 必须跟着 git 走，否则线上 404。
+#    （上面 dist/ 那条会把它一起忽略掉，所以这两行 ! 例外不能删）
+#    注意 ! 只能"放行"已被忽略的目录，父目录若被忽略需要逐层放行
+!IDEAblog/portfolio-3d/dist/
+!IDEAblog/portfolio-3d/dist/**
+
 # 教程笔记不发布到网站上
 教程/

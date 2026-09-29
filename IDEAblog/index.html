@@ -12,13 +12,11 @@
   <link rel="stylesheet" href="style.css">
 
   <!--
-    3D 作品集的开发服务器。
-    本页用 file:// 打开，而 portfolio-3d 是 Vite 工程（http://），
-    跨协议只能靠完整绝对 URL 跳转 —— 写相对路径会被解析成
-    file:///E:/fhgBLOG/... 然后 404。
-    ⚠️ 跳转前请先在 portfolio-3d 里跑 `npm run dev`，否则目标页打不开。
+    这里原本有一条 <link rel="preconnect" href="http://localhost:5173">，
+    已删除。preconnect 是"提前和某个域名握手"的优化提示，指向一个
+    本机开发服务器（5173）时，线上访问会白发一次请求再失败，
+    控制台留一条干扰噪音，没有任何收益。
   -->
-  <link rel="preconnect" href="http://localhost:5173">
 </head>
 <body class="idea-page idea-scheme-dark idea-dive">
 
@@ -28,8 +26,9 @@
       <a href="index.html">首页</a>
       <a href="ideas.html">想法集</a>
       <a href="about.html">关于</a>
-      <!-- 3D 作品集：独立 Vite 工程，需先在 portfolio-3d 跑 `npm run dev` -->
-      <a href="http://localhost:5173" target="_blank" rel="noopener">3D 长廊</a>
+      <!-- 3D 长廊 = portfolio-3d 工程构建出来的单文件（自包含，双击可用）
+           用相对路径，本地 file:// 双击和线上 Netlify 两边都能通 -->
+      <a href="portfolio-3d/dist/index.html" target="_blank" rel="noopener">3D 长廊</a>
     </nav>
   </header>
 
@@ -56,7 +55,7 @@
 
     <!-- 下潜终点：入口面板 -->
     <div class="idea-dive-end" id="idea-dive-end">
-      <a class="idea-dive-enter" href="http://localhost:5173" target="_blank" rel="noopener">落笔入册 · 进入 3D 长廊</a>
+      <a class="idea-dive-enter" href="portfolio-3d/dist/index.html" target="_blank" rel="noopener">落笔入册 · 进入 3D 长廊</a>
       <span class="idea-dive-sub">一念未落 · 未成之想皆可入册</span>
     </div>
 
@@ -64,7 +63,7 @@
     <div class="idea-webgl-fallback">
       <h1>一念未落</h1>
       <p>此设备暂不支持 3D 水墨场景，画已备好，直接入册。</p>
-      <a href="http://localhost:5173" target="_blank" rel="noopener">进入 3D 长廊 →</a>
+      <a href="portfolio-3d/dist/index.html" target="_blank" rel="noopener">进入 3D 长廊 →</a>
     </div>
   </main>
 
