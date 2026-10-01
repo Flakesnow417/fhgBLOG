@@ -1,6 +1,6 @@
 # art-source —— 作品图原始文件（不参与打包）
 
-这里放的是三张作品图的**原始 1024px PNG**，只作为"母版"保留。
+这里放的是六张作品图的**原始 1024px PNG**，只作为"母版"保留。前三张是第一批水墨/油画作品，后三张包含中世纪西方油画、千禧油画和中式古风人物入画。
 
 ## 它们是怎么进到页面里的
 
@@ -15,11 +15,11 @@ art-source/*.png  (1024px, 2.4MB 左右)
       │  ② embed-textures.mjs 768
       │     转 base64，生成 src/constants/artworkImages.js
       ▼
-src/constants/artworkImages.js  (5.2 MB, base64)
+src/constants/artworkImages.js  (10.9 MB, base64)
       │
       │  ③ vite build（vite-plugin-singlefile 内联）
       ▼
-dist/index.html  (7.4 MB, 单文件)
+dist/index.html  (13.3 MB, 单文件)
 ```
 
 **关键：这个目录不在 `public/` 下。**
@@ -63,7 +63,7 @@ dist/index.html  (7.4 MB, 单文件)
 | 极端贴墙、只剩 2 个角在视野内（距离 1.11） | 713 px |
 
 768 已覆盖两种情形；1024 属于约 2× 的过采样，
-代价是 base64 从 5.2 MB 涨到 9.3 MB（多 44%）。
+单张仍用 768px，六张合计 base64 约 10.9 MB；如果全部用 1024px，体积还会继续明显上涨。
 
 > 顺带记录一个坑：`crop-and-fit.mjs` 曾经因为一条错误的 `mv` 链
 > 把油画那张覆盖掉了。所以这里的文件名要**用像素内容校验**，

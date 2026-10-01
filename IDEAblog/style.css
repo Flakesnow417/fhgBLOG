@@ -798,6 +798,185 @@ body.idea-board-3d .idea-grid { display: none; }
 }
 
 /* ============================================================
+   首页 · 请阁下入画
+   ------------------------------------------------------------
+   这里保留原有的滚动下潜和 Three.js 镜头，只把视觉从“夜景界面”
+   调成宣纸上的青绿远山：大面积留白、淡墨山脊、朱砂落款和一条
+   很轻的入画笔锋。Canvas 仍然负责动画，CSS 只负责纸面与文字层。
+   ============================================================ */
+.idea-dive .idea-hero--dive {
+  background:
+    radial-gradient(ellipse at 76% 21%, rgba(194, 159, 91, .18), transparent 25%),
+    linear-gradient(180deg, #e9e2d3 0%, #dcd7c8 52%, #c8c8ba 100%);
+}
+
+.idea-dive .idea-vignette {
+  background:
+    radial-gradient(ellipse at 66% 44%, rgba(255, 250, 235, .12), transparent 46%),
+    linear-gradient(180deg, rgba(248, 243, 228, .18), transparent 23%, rgba(35, 46, 42, .16) 100%);
+  mix-blend-mode: multiply;
+  opacity: .75;
+}
+
+.idea-dive .idea-head--hero {
+  color: rgba(35, 42, 35, .86);
+  text-shadow: 0 1px 0 rgba(255, 251, 239, .5);
+}
+
+.idea-dive .idea-nav a:hover { color: var(--zhu); }
+.idea-dive .idea-vtitle {
+  color: #252c28;
+  text-shadow: 2px 3px 0 rgba(247, 241, 222, .45), 0 0 22px rgba(255, 248, 226, .4);
+}
+.idea-dive .idea-vsub { color: rgba(47, 57, 49, .78); }
+.idea-dive .idea-hintline { color: rgba(47, 57, 49, .62); }
+.idea-dive .idea-seal {
+  background-color: #a8322d;
+  box-shadow: inset 0 0 0 2px rgba(244, 241, 232, .34), inset 0 0 14px rgba(46, 8, 6, .5), 5px 7px 0 rgba(74, 55, 36, .08);
+}
+
+/* 入画过渡：宣纸先盖住画面，墨团从中央化开，笔锋横过后再跳转。 */
+.ink-entry-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ink-entry-transition__paper {
+  position: absolute;
+  inset: -8%;
+  background-color: #eee7d7;
+  background-image: var(--paper-grain), repeating-linear-gradient(94deg, rgba(47, 42, 33, .025) 0 1px, transparent 1px 5px);
+  transform: scale(1.08);
+}
+
+.ink-entry-transition__wash {
+  position: absolute;
+  width: 52vmin;
+  height: 52vmin;
+  border-radius: 47% 53% 51% 49% / 54% 45% 55% 46%;
+  background: radial-gradient(circle at 44% 42%, rgba(24, 35, 31, .78), rgba(35, 57, 49, .48) 36%, rgba(35, 57, 49, .12) 66%, transparent 74%);
+  filter: blur(2px);
+  transform: scale(.12) rotate(-12deg);
+}
+
+.ink-entry-transition__wash--two {
+  width: 76vmin;
+  height: 28vmin;
+  background: radial-gradient(ellipse at center, rgba(38, 57, 47, .42), rgba(85, 103, 83, .16) 52%, transparent 73%);
+  transform: scale(.2) rotate(-7deg);
+  filter: blur(5px);
+}
+
+.ink-entry-transition__brush {
+  position: absolute;
+  width: 0;
+  height: 3px;
+  left: 7%;
+  top: 51%;
+  background: linear-gradient(90deg, transparent, rgba(28, 29, 25, .84) 10%, rgba(28, 29, 25, .48) 78%, transparent);
+  filter: blur(.5px);
+  box-shadow: 0 5px 0 rgba(28, 29, 25, .15), 0 -4px 0 rgba(28, 29, 25, .1);
+}
+
+.ink-entry-transition__seal {
+  position: absolute;
+  right: 15vw;
+  bottom: 17vh;
+  width: 54px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #a8322d;
+  color: #a8322d;
+  font-family: var(--font-brush);
+  font-size: 24px;
+  writing-mode: vertical-rl;
+  opacity: 0;
+  transform: rotate(7deg) scale(.6);
+}
+
+.ink-entry-transition__words {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: #262b27;
+  font-family: var(--font-brush);
+  font-size: clamp(30px, 5vw, 64px);
+  letter-spacing: .22em;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.idea-entering-gallery .ink-entry-transition {
+  opacity: 1;
+  pointer-events: auto;
+}
+.idea-entering-gallery .ink-entry-transition__paper {
+  animation: ink-paper-arrive .62s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+.idea-entering-gallery .ink-entry-transition__wash--one {
+  animation: ink-wash-open .92s cubic-bezier(.22, 1, .36, 1) .12s forwards;
+}
+.idea-entering-gallery .ink-entry-transition__wash--two {
+  animation: ink-wash-open-wide 1.12s cubic-bezier(.22, 1, .36, 1) .2s forwards;
+}
+.idea-entering-gallery .ink-entry-transition__brush {
+  animation: ink-brush-stroke .68s cubic-bezier(.22, 1, .36, 1) .62s forwards;
+}
+.idea-entering-gallery .ink-entry-transition__words {
+  animation: ink-words-in .5s ease .78s forwards;
+}
+.idea-entering-gallery .ink-entry-transition__seal {
+  animation: ink-seal-stamp .45s ease 1s forwards;
+}
+
+@keyframes ink-paper-arrive {
+  from { transform: scale(1.08) translateY(105%); }
+  to { transform: scale(1.08) translateY(0); }
+}
+@keyframes ink-wash-open {
+  from { opacity: 0; transform: scale(.12) rotate(-12deg); }
+  35% { opacity: .92; }
+  to { opacity: .68; transform: scale(2.9) rotate(3deg); }
+}
+@keyframes ink-wash-open-wide {
+  from { opacity: 0; transform: scale(.2) rotate(-7deg); }
+  to { opacity: .76; transform: scale(2.1) rotate(4deg); }
+}
+@keyframes ink-brush-stroke {
+  from { width: 0; opacity: 0; }
+  15% { opacity: 1; }
+  to { width: 86%; opacity: .9; }
+}
+@keyframes ink-words-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: .9; transform: translateY(0); }
+}
+@keyframes ink-seal-stamp {
+  from { opacity: 0; transform: rotate(7deg) scale(.6); }
+  70% { opacity: 1; transform: rotate(-3deg) scale(1.08); }
+  to { opacity: .9; transform: rotate(1deg) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ink-entry-transition__paper,
+  .ink-entry-transition__wash,
+  .ink-entry-transition__brush,
+  .ink-entry-transition__seal,
+  .ink-entry-transition__words {
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+
+/* ============================================================
    夜场沉浸版（content 页 · 千禧 Y2K 深夜）
    ------------------------------------------------------------
    assets/night.js 把 <canvas id="idea-night"> 铺满整页当天幕，

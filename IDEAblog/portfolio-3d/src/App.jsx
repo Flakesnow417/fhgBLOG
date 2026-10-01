@@ -64,6 +64,14 @@ function PortfolioShell() {
   const [phase, setPhase] = useState(INTRO_PHASE.LOADING)
   const [sceneReady, setSceneReady] = useState(false)
   const [timeoutHit, setTimeoutHit] = useState(false)
+  const [galleryTheme, setGalleryTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'day'
+    try {
+      return window.localStorage.getItem('portfolio-gallery-theme') === 'night' ? 'night' : 'day'
+    } catch {
+      return 'day'
+    }
+  })
 
   const { isOpen } = useInteraction()
 
@@ -111,11 +119,17 @@ function PortfolioShell() {
     return () => window.clearTimeout(timer)
   }, [sceneReady, timeoutHit, phase])
 
-  // 把阶段挂到 body 上，方便 CSS 依据阶段做整体表现
-  // （也便于自动化验证直接读状态，这个很实用）
+  // 把阶段和主题挂到 body 上，方便 DOM 控件与 CSS 依据状态做整体表现。
+  // 主题也写入本地，用户下次进入时保持上一次的选择。
   useEffect(() => {
     document.body.dataset.introPhase = phase
-  }, [phase])
+    document.body.dataset.galleryTheme = galleryTheme
+    try {
+      window.localStorage.setItem('portfolio-gallery-theme', galleryTheme)
+    } catch {
+      // file:// 某些浏览器会禁用 localStorage，主题仍可正常切换。
+    }
+  }, [phase, galleryTheme])
 
   // 弹窗打开时禁掉底层滚动，避免滚轮穿透到页面
   useEffect(() => {
@@ -130,10 +144,11 @@ function PortfolioShell() {
 
   return (
     <div className="app">
+      {/* 当前场景不依赖真实阴影；关闭 shadow map 可减少首屏 framebuffer
+          和每帧阴影绘制成本。高分屏限制到 1.5 倍 DPR，降低 GPU 压力。 */}
       <Canvas
         className="r3f-fill"
-        shadows
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         gl={{
           antialias: true,
           alpha: false,
@@ -145,20 +160,35 @@ function PortfolioShell() {
           gl.outputColorSpace = THREE.SRGBColorSpace
           gl.toneMapping = THREE.ACESFilmicToneMapping
           gl.toneMappingExposure = 1.0
-          scene.background = new THREE.Color('#f1eee6')
+          scene.background = new THREE.Color(galleryTheme === 'night' ? '#071527' : '#f1eee6')
           console.log('[boot] canvas size =', size.width, 'x', size.height)
         }}
       >
         <Suspense fallback={null}>
           {/* Bridge 负责把外层 context 透传进 R3F 的 reconciler */}
           <Bridge>
-            <Scene onReady={handleSceneReady} />
+            <Scene onReady={handleSceneReady} theme={galleryTheme} />
           </Bridge>
         </Suspense>
       </Canvas>
 
       {/* 开场遮罩：无论哪个阶段都保持挂载，内部用 display 控制显隐 */}
       <PaperTearIntro phase={phase} onTearComplete={handleTearComplete} />
+
+      <div className="gallery-controls" role="group" aria-label="长廊灯光模式">
+        <span className="gallery-controls__label">游廊灯</span>
+        <button
+          type="button"
+          className={`gallery-theme-toggle gallery-theme-toggle--${galleryTheme}`}
+          onClick={() => setGalleryTheme((theme) => (theme === 'day' ? 'night' : 'day'))}
+          aria-pressed={galleryTheme === 'night'}
+          aria-label={galleryTheme === 'day' ? '切换到夜游模式' : '切换到白天模式'}
+        >
+          <span className="gallery-theme-toggle__sun" aria-hidden="true">日</span>
+          <span className="gallery-theme-toggle__moon" aria-hidden="true">月</span>
+          <span className="gallery-theme-toggle__text">{galleryTheme === 'day' ? '白天' : '夜游'}</span>
+        </button>
+      </div>
 
       {/* 纸张还没撕开时的呼吸提示：放在纸的上层，不随纸撕走 */}
       {phase === INTRO_PHASE.LOADING && (

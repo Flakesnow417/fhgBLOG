@@ -24,7 +24,7 @@ import { SEGMENT_LENGTH, CORRIDOR_START_Z, getSegmentFromZ } from '../constants/
 const SEGMENTS_AHEAD = 1
 const SEGMENTS_BEHIND = 1
 
-export default function InfiniteCorridor() {
+export default function InfiniteCorridor({ theme = 'day' }) {
   const { camera } = useThree()
 
   // 预挂载 0 和 1：纸张遮罩期间就把 shader 编译掉
@@ -56,7 +56,7 @@ export default function InfiniteCorridor() {
       {activeSegments.map((segmentIndex) => (
         <CorridorSegmentBoundary key={`seg-${segmentIndex}`} segmentIndex={segmentIndex}>
           {/* 只有最靠后的那一段（段 0）需要封口：再往后没有墙了 */}
-          <CorridorSegment segmentIndex={segmentIndex} isEndSegment={segmentIndex === 0} />
+          <CorridorSegment segmentIndex={segmentIndex} isEndSegment={segmentIndex === 0} theme={theme} />
         </CorridorSegmentBoundary>
       ))}
     </group>

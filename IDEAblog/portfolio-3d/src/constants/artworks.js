@@ -170,6 +170,12 @@ export const CORRIDOR_ARTWORKS = [
     motif: 1,
     seed: 404,
     accent: '#2f8f6f',
+    // 真实作品图：中世纪油画 · 圣徒献金梨
+    // 用一幅带奇幻彩蛋的中世纪宴席表现工作经历：古老画法承载新想法，
+    // 小龙和发光金梨让严肃的“工程履历”多一点玩心。
+    image: ARTWORK_IMAGES['oil-medieval-saint-dragon'],
+    imageEdge: 1.18,
+    imageSaturate: 1.04,
     detail: {
       lead: '按时间倒序，只保留对现在还有影响的部分。',
       blocks: [
@@ -207,6 +213,12 @@ export const CORRIDOR_ARTWORKS = [
     motif: 0,
     seed: 505,
     accent: '#a8802f',
+    // 真实作品图：千禧油画 · 鼠标水果星球
+    // 把“从课堂作业到独立产品”画成一场太空水果保龄球：光盘轨道、
+    // 鼠标飞船和水果行星都带着千禧年的玩具感，颜色则保留油画厚涂的重量。
+    image: ARTWORK_IMAGES['oil-y2k-mouse-fruit'],
+    imageEdge: 1.28,
+    imageSaturate: 1.02,
     detail: {
       lead: '学校里学到的最大收获，是"把一个问题彻底弄清楚"的耐心。',
       blocks: [
@@ -236,6 +248,12 @@ export const CORRIDOR_ARTWORKS = [
     motif: 3,
     seed: 606,
     accent: '#c8532f',
+    // 真实作品图：中式古风 · 人物入画
+    // 联系方式是长廊的最后一块画：行旅者一脚踏进画卷，狐灵替他卷住
+    // 画轴，把“欢迎来信”变成一次轻巧的入画彩蛋。
+    image: ARTWORK_IMAGES['ink-enter-painting'],
+    imageEdge: 1.02,
+    imageSaturate: 1.08,
     detail: {
       lead: '对三维交互、可视化、或者只是"这个东西怎么做出来的"感兴趣，都可以直接找我。',
       blocks: [

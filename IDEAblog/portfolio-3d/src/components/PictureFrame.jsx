@@ -31,6 +31,7 @@ import { registerReveal } from '../utils/revealRegistry'
  * 页面上依然是完整的画廊，而不是一堆空白画框。
  */
 const artTexCache = new Map()
+const proceduralTexCache = new Map()
 
 /**
  * 已就绪的贴图。返回 null 表示"真实图片还没准备好，先用程序化占位"。
@@ -49,7 +50,9 @@ function getArtTextures(artwork) {
       const entry = { ready: false, pending: true, tex: null, listeners: [] }
       artTexCache.set(imgKey, entry)
       createArtTexturesFromImage(artwork.image, {
-        size: 1024,
+        // 画框平时远小于 640px；先用较轻的运行时尺寸，
+        // 把首次进入的 Sobel / 排线计算量降下来。
+        size: 640,
         seed: artwork.seed,
         saturate: artwork.imageSaturate ?? 1.18,
         edgeStrength: artwork.imageEdge ?? 1,
@@ -77,17 +80,14 @@ function getArtTextures(artwork) {
   }
 
   // ② 程序化占位（也是没有 image 字段时的唯一来源）
-  if (!artTexCache.has(key)) {
-    artTexCache.set(key, {
-      ready: true,
-      tex: {
-        sketch: createSketchArtTexture({ seed: artwork.seed, motif: artwork.motif }),
-        painted: createPaintedArtTexture({ seed: artwork.seed, motif: artwork.motif }),
-        source: 'procedural',
-      },
+  if (!proceduralTexCache.has(key)) {
+    proceduralTexCache.set(key, {
+      sketch: createSketchArtTexture({ seed: artwork.seed, motif: artwork.motif }),
+      painted: createPaintedArtTexture({ seed: artwork.seed, motif: artwork.motif }),
+      source: 'procedural',
     })
   }
-  return artTexCache.get(key).tex
+  return proceduralTexCache.get(key)
 }
 
 /** 订阅某张图的加载完成事件（用于触发重渲染）。 */
@@ -109,7 +109,9 @@ function toTexture(canvas) {
   // 否则在 renderer.outputColorSpace = sRGB 的管线下会被当成线性值再转一次，
   // 画面会发灰、发闷。
   t.colorSpace = THREE.SRGBColorSpace
-  t.anisotropy = 8
+  // 画框是中等距离的正面平面，4 倍各向异性已经够用；
+  // 8 倍会放大每张画的采样成本，尤其在首次进入的多画框场景里。
+  t.anisotropy = 4
   t.generateMipmaps = true
   t.minFilter = THREE.LinearMipmapLinearFilter
   t.magFilter = THREE.LinearFilter
@@ -205,7 +207,7 @@ function dirForSide(side) {
   return { dirX: PAINT_REVEAL_DEFAULTS.dirX, dirY: 0, dirZ: 0.5 }
 }
 
-export default function PictureFrame({ artwork, position, rotation }) {
+export default function PictureFrame({ artwork, position, rotation, theme = 'day' }) {
   const { hoveredId, setHoveredId, openArtwork, isOpen } = useInteraction()
 
   const frameTex = getFrameTexture()
@@ -228,11 +230,15 @@ export default function PictureFrame({ artwork, position, rotation }) {
   // 程序化占位：同步生成，任何时刻都可用
   const fallbackTextures = useMemo(() => {
     if (!artwork.image) return null
-    return {
-      sketch: createSketchArtTexture({ seed: artwork.seed, motif: artwork.motif }),
-      painted: createPaintedArtTexture({ seed: artwork.seed, motif: artwork.motif }),
-      source: 'procedural',
+    const key = `${artwork.motif}-${artwork.seed}`
+    if (!proceduralTexCache.has(key)) {
+      proceduralTexCache.set(key, {
+        sketch: createSketchArtTexture({ seed: artwork.seed, motif: artwork.motif }),
+        painted: createPaintedArtTexture({ seed: artwork.seed, motif: artwork.motif }),
+        source: 'procedural',
+      })
     }
+    return proceduralTexCache.get(key)
   }, [artwork.image, artwork.seed, artwork.motif])
 
   const { sketch, painted } = imageTextures || fallbackTextures
@@ -339,7 +345,9 @@ export default function PictureFrame({ artwork, position, rotation }) {
       haloMatRef.current.opacity = progress * 0.5
     }
     if (lampRef.current) {
-      lampRef.current.emissiveIntensity = 1.0 + progress * 1.6
+      lampRef.current.emissiveIntensity = theme === 'night'
+        ? 1.5 + progress * 2.2
+        : 1.0 + progress * 1.6
     }
 
     // 前倾：把整个画框朝走廊内侧推一点点，并极轻微地转向观众。
@@ -453,8 +461,8 @@ export default function PictureFrame({ artwork, position, rotation }) {
           <boxGeometry args={[0.3, 0.045, 0.12]} />
           <meshStandardMaterial
             ref={lampRef}
-            color="#fff6e2"
-            emissive="#ffe9bd"
+            color={theme === 'night' ? '#d7eaff' : '#fff6e2'}
+            emissive={theme === 'night' ? '#91c8ff' : '#ffe9bd'}
             emissiveIntensity={1}
             roughness={0.4}
           />
@@ -465,9 +473,9 @@ export default function PictureFrame({ artwork, position, rotation }) {
           <mesh position={[0, -matH / 2 - 0.075, 0.024]} raycast={noRaycast}>
             <planeGeometry args={[0.62, 0.052]} />
             <meshBasicMaterial
-              color={artwork.accent || '#c8532f'}
+              color={theme === 'night' ? '#91c8ff' : artwork.accent || '#c8532f'}
               transparent
-              opacity={0.85}
+              opacity={theme === 'night' ? 0.72 : 0.85}
               toneMapped={false}
             />
           </mesh>

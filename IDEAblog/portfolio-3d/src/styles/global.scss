@@ -114,6 +114,120 @@ body {
   cursor: default;
 }
 
+/* --------------------------------------------------------------------------
+   白天 / 夜游主题
+   -------------------------------------------------------------------------- */
+.gallery-controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: var(--z-ui);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: auto;
+  padding: 5px 7px 5px 10px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  color: var(--ink-soft);
+  font-family: var(--font-sketch);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  user-select: none;
+  transition: color .55s ease, border-color .55s ease, background .55s ease;
+}
+
+.gallery-controls__label {
+  opacity: .65;
+}
+
+.gallery-theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 78px;
+  height: 28px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: #d9cba9;
+  color: #4a3925;
+  font: inherit;
+  letter-spacing: .1em;
+  transition: background .55s ease, color .55s ease, box-shadow .55s ease;
+}
+
+.gallery-theme-toggle__sun,
+.gallery-theme-toggle__moon {
+  display: inline-grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 1;
+  transition: transform .55s ease, opacity .55s ease, background .55s ease;
+}
+
+.gallery-theme-toggle__sun {
+  background: #fff4bd;
+  box-shadow: 0 0 9px rgba(255, 214, 91, .65);
+}
+
+.gallery-theme-toggle__moon {
+  opacity: .4;
+  background: #d1e9ff;
+}
+
+.gallery-theme-toggle--night {
+  background: #17365a;
+  color: #d6ecff;
+  box-shadow: 0 0 16px rgba(87, 164, 231, .22);
+}
+
+.gallery-theme-toggle--night .gallery-theme-toggle__sun {
+  opacity: .35;
+  transform: scale(.8);
+}
+
+.gallery-theme-toggle--night .gallery-theme-toggle__moon {
+  opacity: 1;
+  transform: scale(1.08);
+  box-shadow: 0 0 10px rgba(152, 211, 255, .68);
+}
+
+body[data-gallery-theme='night'] {
+  --paper: #102642;
+  --paper-warm: #183555;
+  --paper-shadow: #07182c;
+  --ink: #d8eaff;
+  --ink-soft: #a9c5df;
+  --ink-faint: #6f93b5;
+  --accent: #82c8ff;
+  background: #071527;
+  color: var(--ink);
+}
+
+body[data-gallery-theme='night'] .back-home {
+  border-color: rgba(134, 183, 224, .58);
+  background: rgba(9, 28, 50, .82);
+  color: #c9e4fb;
+}
+
+body[data-gallery-theme='night'] .back-home:hover,
+body[data-gallery-theme='night'] .back-home:focus-visible {
+  color: #fff;
+  border-color: #9dd4ff;
+}
+
+body[data-gallery-theme='night'] .gallery-controls {
+  border-color: rgba(127, 177, 220, .5);
+  background: rgba(8, 27, 48, .84);
+  color: #b7d5ed;
+}
+
 a,
 button,
 [role='button'] {

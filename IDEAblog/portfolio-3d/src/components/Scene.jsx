@@ -70,7 +70,7 @@ function CorridorAtmosphere({ fogColor = '#f1eee6', fogNear = 26, fogFar = 96, b
   return null
 }
 
-export default function Scene({ onReady, controlsEnabled = true }) {
+export default function Scene({ onReady, controlsEnabled = true, theme = 'day' }) {
   const fired = useRef(false)
   const { isOpen } = useInteraction()
 
@@ -87,17 +87,27 @@ export default function Scene({ onReady, controlsEnabled = true }) {
   return (
     <>
       <CorridorCamera enabled={roaming} />
-      <CorridorAtmosphere />
+      <CorridorAtmosphere
+        fogColor={theme === 'night' ? '#0b2038' : '#f1eee6'}
+        fogNear={theme === 'night' ? 20 : 26}
+        fogFar={theme === 'night' ? 82 : 96}
+        bg={theme === 'night' ? '#071527' : '#f1eee6'}
+      />
       <DebugBridge />
 
-      {/* --- 光照：只为 Standard 材质（画框射灯等）提供层次 ---
-          数值不需要很大，因为空间亮度已经由 basic 材质决定。 */}
-      <ambientLight intensity={0.55} color="#fdfbf6" />
-      <hemisphereLight args={['#fffdf8', '#cfc9bb', 0.5]} />
-      <directionalLight position={[2, 9, 6]} intensity={0.35} color="#fff8ea" />
+      {/* 夜游时只改变灯光与空间色调，几何和贴图数量保持不变，避免再次增加首屏压力。 */}
+      <ambientLight intensity={theme === 'night' ? 0.24 : 0.55} color={theme === 'night' ? '#8eb9df' : '#fdfbf6'} />
+      <hemisphereLight
+        args={theme === 'night' ? ['#244c78', '#071527', 0.34] : ['#fffdf8', '#cfc9bb', 0.5]}
+      />
+      <directionalLight
+        position={theme === 'night' ? [-4, 10, 4] : [2, 9, 6]}
+        intensity={theme === 'night' ? 0.5 : 0.35}
+        color={theme === 'night' ? '#9fc9f2' : '#fff8ea'}
+      />
 
       {/* --- 长廊主体 --- */}
-      <InfiniteCorridor />
+      <InfiniteCorridor theme={theme} />
     </>
   )
 }

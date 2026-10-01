@@ -55,7 +55,7 @@
 
     <!-- 下潜终点：入口面板 -->
     <div class="idea-dive-end" id="idea-dive-end">
-      <a class="idea-dive-enter" href="portfolio-3d/dist/index.html" target="_blank" rel="noopener">落笔入册 · 进入 3D 长廊</a>
+      <a class="idea-dive-enter" href="portfolio-3d/dist/index.html" target="_blank" rel="noopener">落笔入册 · 请阁下入画</a>
       <span class="idea-dive-sub">一念未落 · 未成之想皆可入册</span>
     </div>
 
@@ -63,7 +63,17 @@
     <div class="idea-webgl-fallback">
       <h1>一念未落</h1>
       <p>此设备暂不支持 3D 水墨场景，画已备好，直接入册。</p>
-      <a href="portfolio-3d/dist/index.html" target="_blank" rel="noopener">进入 3D 长廊 →</a>
+      <a href="portfolio-3d/dist/index.html" target="_blank" rel="noopener">请阁下入画 →</a>
+    </div>
+
+    <!-- 入画过渡：按钮点击后由墨滴、宣纸和游走笔锋组成短暂的开场。 -->
+    <div class="ink-entry-transition" aria-hidden="true">
+      <div class="ink-entry-transition__paper"></div>
+      <div class="ink-entry-transition__wash ink-entry-transition__wash--one"></div>
+      <div class="ink-entry-transition__wash ink-entry-transition__wash--two"></div>
+      <div class="ink-entry-transition__brush"></div>
+      <div class="ink-entry-transition__seal">入畫</div>
+      <p class="ink-entry-transition__words">请阁下入画</p>
     </div>
   </main>
 
@@ -72,13 +82,53 @@
 
   <!-- Three.js UMD 传统脚本版：双击 file:// 打开也能跑 -->
   <script src="assets/vendor/three.min.js"></script>
+  <script>window.IDEA_GL_STATUS = "loading";</script>
   <script src="assets/ink-world.js"></script>
   <script>
-    /* 看门狗：5 秒后 3D 还没就绪（老浏览器/无 WebGL/脚本加载失败）→ 静态降级 */
+    (function () {
+      var links = document.querySelectorAll('a[href="portfolio-3d/dist/index.html"]');
+      var transition = document.querySelector('.ink-entry-transition');
+      if (!transition) return;
+      links.forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          event.preventDefault();
+          var target = link.href;
+          var popup = link.target === '_blank' ? window.open('about:blank', '_blank') : null;
+          document.body.classList.add('idea-entering-gallery');
+          transition.classList.add('is-active');
+          window.setTimeout(function () {
+            if (popup) {
+              popup.location.href = target;
+            } else {
+              window.location.href = target;
+            }
+          }, 1420);
+        });
+      });
+    })();
+  </script>
+  <script>
+    /*
+     * 兜底只在确实无法运行时出现。此前这里只检查 IDEA_GL_READY，
+     * 一旦主脚本有语法错误、网络加载慢或初始化超时，就会误报成
+     * “此设备不支持 3D”。现在先区分 WebGL 不可用与页面脚本失败。
+     */
     window.addEventListener("load", function () {
       setTimeout(function () {
-        if (!window.IDEA_GL_READY) document.body.classList.add("idea-no-webgl");
-      }, 5000);
+        if (window.IDEA_GL_READY) return;
+        var canvas = document.getElementById("idea-gl");
+        var hasWebGL = false;
+        try {
+          hasWebGL = !!(canvas && (canvas.getContext("webgl2") || canvas.getContext("webgl")));
+        } catch (e) {}
+        var fallbackText = document.querySelector(".idea-webgl-fallback p");
+        if (fallbackText) {
+          fallbackText.textContent = hasWebGL
+            ? "水墨场景加载没有完成，画已备好，仍可直接入画。"
+            : "此设备暂不支持 3D 水墨场景，画已备好，直接入册。";
+        }
+        document.body.classList.add("idea-no-webgl");
+      }, 8000);
     });
   </script>
 </body>

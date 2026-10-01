@@ -25,7 +25,7 @@ import * as THREE from 'three'
  *
  * 三张图的差别：
  *   墙 —— 几乎纯白，只有很细的颗粒与极淡的横向接缝（像刷过漆的墙）
- *   地 —— 白底 + 铅笔画的木地板线稿（横向铺板 + 木纹圈 + 板缝）
+ *   地 —— 深红棕红木底色 + 手绘板缝与木纹，保留一点素描线条的毛边
  *   顶 —— 白底 + 石膏板分隔线 + 颗粒
  */
 
@@ -133,9 +133,10 @@ export function createWallTexture({ size = 512, seed = 11 } = {}) {
 }
 
 /**
- * 地板：白底 + 铅笔手绘木地板线稿。
- * 横向铺板（沿 U 方向长），每条板内有木纹圈和板缝。
- * 这是全场最强的「素描感」来源 —— 参考项目的地板就是这种线稿。
+ * 地板：红木底色 + 手绘木纹与板缝。
+ * 横向铺板（沿 U 方向长），每条板内有深浅不一的木纹、木结和细微的
+ * 铅笔式双线。这样地面从原来的白纸线稿变成有温度的红木地板，仍然
+ * 保留长廊整体的手作感。
  */
 export function createFloorTexture({
   size = 1024,
@@ -147,25 +148,44 @@ export function createFloorTexture({
   const ctx = canvas.getContext('2d')
   const rand = makeRand(seed)
 
-  ctx.fillStyle = 'rgb(243, 241, 234)'
+  // 红木的底色：中心略亮、边缘略深，避免整块地板像一张纯色贴图。
+  const base = ctx.createLinearGradient(0, 0, size, size)
+  base.addColorStop(0, '#5b1f1d')
+  base.addColorStop(0.46, '#7c2f26')
+  base.addColorStop(1, '#421617')
+  ctx.fillStyle = base
   ctx.fillRect(0, 0, size, size)
-  paintGrain(ctx, size, rand, { amount: 3.5 })
+
+  // 很细的纵向木纤维，先铺底，再叠手绘木纹。
+  ctx.save()
+  for (let i = 0; i < size * 0.42; i++) {
+    const x = rand() * size
+    const alpha = 0.025 + rand() * 0.055
+    ctx.strokeStyle = rand() > 0.5 ? '#d7835d' : '#210c12'
+    ctx.globalAlpha = alpha
+    ctx.lineWidth = 0.5 + rand() * 1.4
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    for (let y = 0; y <= size; y += 32) {
+      ctx.lineTo(x + Math.sin(y / size * Math.PI * 3 + rand() * 2) * (2 + rand() * 5), y)
+    }
+    ctx.stroke()
+  }
+  ctx.restore()
 
   const ph = size / planks // 每条板的高度
 
-  // --- 铅笔线稿：用两遍描线做出手绘的"毛"感 ---
-  const inkStroke = (drawFn, { w = 1.5, alpha = 0.82 } = {}) => {
+  // 红木上的手绘线条，用深棕和暖铜色两层描边制造笔触感。
+  const woodStroke = (drawFn, { w = 1.5, alpha = 0.55, color = '#2a0d12' } = {}) => {
     ctx.save()
-    ctx.strokeStyle = '#2b2721'
+    ctx.strokeStyle = color
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-    // 第一遍：主线
     ctx.globalAlpha = alpha
     ctx.lineWidth = w
     drawFn(0)
-    // 第二遍：轻微抖动重描，模拟铅笔反复描边
-    ctx.globalAlpha = alpha * 0.5
-    ctx.lineWidth = w * 0.7
+    ctx.globalAlpha = alpha * 0.38
+    ctx.lineWidth = w * 0.65
     drawFn(1)
     ctx.restore()
   }
@@ -174,28 +194,36 @@ export function createFloorTexture({
     const yTop = p * ph
     const yMid = yTop + ph / 2
 
-    // 板缝：两条贴近的水平线（不是一条粗线，手绘就是会双线）
+    // 板缝：深色双线，配一条很细的暖色反光边。
     const gapJitter = () => (rand() - 0.5) * 2.4
-    inkStroke((pass) => {
+    woodStroke((pass) => {
       const off = pass * 0.9
       ctx.beginPath()
       ctx.moveTo(0, yTop + off + gapJitter() * 0.3)
       ctx.lineTo(size, yTop + off + gapJitter() * 0.3)
       ctx.stroke()
-    }, { w: 1.3, alpha: 0.6 })
+    }, { w: 3.2, alpha: 0.72, color: '#240d12' })
+    woodStroke((pass) => {
+      const y = yTop + 3 + pass * 0.45
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(size, y)
+      ctx.stroke()
+    }, { w: 1.1, alpha: 0.36, color: '#d17a55' })
 
-    // 板内的木纹：若干条不规则的横向波纹
-    const grainLines = 3 + Math.floor(rand() * 3)
+    // 板内木纹：比原来的线稿更密，但保持手绘波浪和不规则断续。
+    const grainLines = 7 + Math.floor(rand() * 5)
     for (let g = 0; g < grainLines; g++) {
-      const baseY = yMid + (rand() - 0.5) * ph * 0.55
-      const amp = 2 + rand() * ph * 0.09
-      const freq = 1.2 + rand() * 1.8
+      const baseY = yMid + (rand() - 0.5) * ph * 0.72
+      const amp = 2 + rand() * ph * 0.1
+      const freq = 1.2 + rand() * 2.4
       const phase = rand() * Math.PI * 2
-      const dash = rand() > 0.55 // 有些木纹是断续的
-      inkStroke(
+      const dash = rand() > 0.38
+      const warm = rand() > 0.62
+      woodStroke(
         (pass) => {
           ctx.beginPath()
-          if (dash) ctx.setLineDash([size * (0.06 + rand() * 0.16), size * (0.02 + rand() * 0.05)])
+          if (dash) ctx.setLineDash([size * (0.025 + rand() * 0.09), size * (0.012 + rand() * 0.04)])
           for (let x = 0; x <= size; x += 8) {
             const y = baseY + Math.sin((x / size) * Math.PI * 2 * freq + phase) * amp + (pass ? 0.7 : 0)
             if (x === 0) ctx.moveTo(x, y)
@@ -204,17 +232,16 @@ export function createFloorTexture({
           ctx.stroke()
           ctx.setLineDash([])
         },
-        { w: 1.0, alpha: 0.26 },
+        { w: 1.1 + rand() * 1.2, alpha: 0.2 + rand() * 0.22, color: warm ? '#c56b4c' : '#2c0e14' },
       )
     }
 
-    // 木结疤：椭圆同心线，位置随机，出现概率不高
-    if (rand() > 0.55) {
+    // 木结疤：深色椭圆同心线，给红木增加真实的材质节点。
+    if (rand() > 0.42) {
       const kx = rand() * size
       const ky = yMid + (rand() - 0.5) * ph * 0.3
-      // 结疤大小差一个量级，看起来才不像复制粘贴
-      const kr = ph * (0.05 + rand() * rand() * 0.28)
-      inkStroke(
+      const kr = ph * (0.05 + rand() * rand() * 0.24)
+      woodStroke(
         (pass) => {
           for (let ring = 0; ring < 3; ring++) {
             const rr = kr * (1 - ring * 0.26)
@@ -223,36 +250,133 @@ export function createFloorTexture({
             ctx.stroke()
           }
         },
-        { w: 1.1, alpha: 0.34 },
+        { w: 1.8, alpha: 0.48, color: '#260c12' },
       )
     }
 
-    // 板端接缝：竖向短线，把一条长板断开
+    // 板端接缝：竖向短线，把一条长板断开。
     const seams = 1 + Math.floor(rand() * 2)
     for (let s = 0; s < seams; s++) {
       const sx = rand() * size
-      inkStroke(
+      woodStroke(
         (pass) => {
           ctx.beginPath()
-          ctx.moveTo(sx + pass * 0.8, yTop + 1)
-          ctx.lineTo(sx + pass * 0.8, yTop + ph - 1)
+          ctx.moveTo(sx + pass * 0.8, yTop + 2)
+          ctx.lineTo(sx + pass * 0.8, yTop + ph - 2)
           ctx.stroke()
         },
-        { w: 1.1, alpha: 0.4 },
+        { w: 1.7, alpha: 0.52, color: '#260d12' },
       )
     }
   }
 
-  // 踢脚线：底部一条更实的线
-  inkStroke(
-    (pass) => {
-      ctx.beginPath()
-      ctx.moveTo(0, size - 2 - pass)
-      ctx.lineTo(size, size - 2 - pass)
-      ctx.stroke()
-    },
-    { w: 1.8, alpha: 0.55 },
-  )
+  // 地板表面的一道低调暖色反光，增强红木的漆面感觉。
+  const sheen = ctx.createLinearGradient(0, 0, 0, size)
+  sheen.addColorStop(0, 'rgba(255, 188, 142, 0.12)')
+  sheen.addColorStop(0.5, 'rgba(255, 188, 142, 0.02)')
+  sheen.addColorStop(1, 'rgba(18, 3, 8, 0.16)')
+  ctx.fillStyle = sheen
+  ctx.fillRect(0, 0, size, size)
+
+  return finalize(canvas)
+}
+
+/**
+ * 夜游天幕：把长廊顶部做成一块可重复的真实感夜空。
+ *
+ * 不使用外部星空大图，避免首屏再增加网络请求和纹理体积。
+ * 纹理里包含：深空渐变、斜向银河雾带、不同亮度和大小的星群，
+ * 以及一小片月光晕。随机数固定，所以每次进入星位不会跳变。
+ */
+export function createNightSkyTexture({ size = 1024, seed = 83, stars = 720 } = {}) {
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const rand = makeRand(seed)
+
+  const sky = ctx.createLinearGradient(0, 0, size, size)
+  sky.addColorStop(0, '#07182b')
+  sky.addColorStop(0.42, '#030b18')
+  sky.addColorStop(1, '#01040b')
+  ctx.fillStyle = sky
+  ctx.fillRect(0, 0, size, size)
+
+  // 银河不是一条硬白线，而是一条带透明度变化的斜向尘雾。
+  ctx.save()
+  ctx.translate(size * 0.52, size * 0.48)
+  ctx.rotate(-0.48)
+  const milky = ctx.createLinearGradient(0, -size * 0.27, 0, size * 0.27)
+  milky.addColorStop(0, 'rgba(133, 170, 206, 0)')
+  milky.addColorStop(0.28, 'rgba(103, 144, 185, 0.045)')
+  milky.addColorStop(0.5, 'rgba(196, 216, 232, 0.15)')
+  milky.addColorStop(0.72, 'rgba(103, 144, 185, 0.045)')
+  milky.addColorStop(1, 'rgba(133, 170, 206, 0)')
+  ctx.fillStyle = milky
+  ctx.fillRect(-size * 0.9, -size * 0.38, size * 1.8, size * 0.76)
+
+  // 银河里的深色尘带，避免它看起来像一条均匀的装饰带。
+  for (let i = 0; i < 42; i++) {
+    ctx.globalAlpha = 0.025 + rand() * 0.05
+    ctx.fillStyle = '#01050d'
+    ctx.beginPath()
+    ctx.ellipse(
+      (rand() - 0.5) * size * 1.5,
+      (rand() - 0.5) * size * 0.42,
+      size * (0.025 + rand() * 0.09),
+      size * (0.008 + rand() * 0.022),
+      rand() * Math.PI,
+      0,
+      Math.PI * 2,
+    )
+    ctx.fill()
+  }
+  ctx.restore()
+
+  // 远处微弱的蓝色星云颗粒。
+  for (let i = 0; i < 90; i++) {
+    const x = rand() * size
+    const y = rand() * size
+    const r = size * (0.004 + rand() * 0.022)
+    const cloud = ctx.createRadialGradient(x, y, 0, x, y, r)
+    cloud.addColorStop(0, 'rgba(88, 139, 190, 0.055)')
+    cloud.addColorStop(1, 'rgba(20, 54, 91, 0)')
+    ctx.fillStyle = cloud
+    ctx.fillRect(x - r, y - r, r * 2, r * 2)
+  }
+
+  // 星点分层：大多数很暗，少量亮星才有光晕，避免“满屏彩灯”。
+  for (let i = 0; i < stars; i++) {
+    const x = rand() * size
+    const y = rand() * size
+    const bright = rand()
+    const radius = bright > 0.965 ? 1.2 + rand() * 1.5 : 0.35 + rand() * 0.7
+    const alpha = bright > 0.965 ? 0.64 + rand() * 0.28 : 0.18 + rand() * 0.34
+    const warm = rand() > 0.84
+    ctx.fillStyle = warm
+      ? `rgba(255, 231, 184, ${alpha})`
+      : `rgba(204, 227, 255, ${alpha})`
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, Math.PI * 2)
+    ctx.fill()
+
+    if (bright > 0.985) {
+      const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 7)
+      glow.addColorStop(0, warm ? 'rgba(255, 226, 170, 0.24)' : 'rgba(183, 220, 255, 0.24)')
+      glow.addColorStop(1, 'rgba(120, 170, 220, 0)')
+      ctx.fillStyle = glow
+      ctx.fillRect(x - radius * 7, y - radius * 7, radius * 14, radius * 14)
+    }
+  }
+
+  // 一轮偏冷的月光晕，月轮本身留在画廊入口灯光里，不做成卡通圆盘。
+  const moonX = size * 0.78
+  const moonY = size * 0.19
+  const moonGlow = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, size * 0.18)
+  moonGlow.addColorStop(0, 'rgba(221, 237, 255, 0.16)')
+  moonGlow.addColorStop(0.32, 'rgba(165, 202, 236, 0.055)')
+  moonGlow.addColorStop(1, 'rgba(120, 170, 220, 0)')
+  ctx.fillStyle = moonGlow
+  ctx.fillRect(moonX - size * 0.18, moonY - size * 0.18, size * 0.36, size * 0.36)
 
   return finalize(canvas)
 }

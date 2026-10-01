@@ -99,7 +99,7 @@ function drawCover(ctx, srcCanvas, target) {
  * @param {number} opts.edgeStrength 边缘强度（1 = 标准，>1 线更深）
  * @param {number} opts.paperTone   纸的亮度（0-255，越大越白）
  */
-function toSketchCanvas(srcCanvas, { size = 1024, seed = 7, edgeStrength = 1, paperTone = 247 } = {}) {
+async function toSketchCanvas(srcCanvas, { size = 640, seed = 7, edgeStrength = 1, paperTone = 247 } = {}) {
   const work = document.createElement('canvas')
   work.width = work.height = size
   const wctx = work.getContext('2d')
@@ -117,6 +117,8 @@ function toSketchCanvas(srcCanvas, { size = 1024, seed = 7, edgeStrength = 1, pa
     const p = i * 4
     gray[i] = d[p] * 0.299 + d[p + 1] * 0.587 + d[p + 2] * 0.114
   }
+  // 先让浏览器处理一次绘制和输入，再进入最重的卷积阶段。
+  await yieldToBrowser()
 
   // --- 2) Sobel 边缘检测 ---
   // 两个 3×3 卷积核分别算"横向变化"和"纵向变化"，
@@ -141,6 +143,8 @@ function toSketchCanvas(srcCanvas, { size = 1024, seed = 7, edgeStrength = 1, pa
       edge[i] = mag
       if (mag > maxEdge) maxEdge = mag
     }
+    // 每 32 行让出一次主线程，避免 6 张图连续计算时冻结首屏。
+    if (y % 32 === 0) await yieldToBrowser()
   }
 
   // --- 3) 合成：纸底 + 线 + 排线 ---
@@ -186,6 +190,8 @@ function toSketchCanvas(srcCanvas, { size = 1024, seed = 7, edgeStrength = 1, pa
       od[p] = od[p + 1] = od[p + 2] = Math.max(0, Math.min(255, v))
       od[p + 3] = 255
     }
+    // 合成阶段同样分块让出主线程；画框先保持程序化占位，不会空白。
+    if (y % 32 === 0) await yieldToBrowser()
   }
   octx.putImageData(outImg, 0, 0)
 
@@ -200,6 +206,10 @@ function toSketchCanvas(srcCanvas, { size = 1024, seed = 7, edgeStrength = 1, pa
 }
 
 /** 小巧的确定性随机数（同一 seed 每次结果一样，方便复现）。 */
+function yieldToBrowser() {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 function mulberry32(a) {
   return function () {
     a |= 0
@@ -226,7 +236,7 @@ function mulberry32(a) {
  * @returns {Promise<{sketch: HTMLCanvasElement, painted: HTMLCanvasElement}>}
  */
 export async function createArtTexturesFromImage(url, opts = {}) {
-  const { size = 1024, saturate = 1.18, edgeStrength = 1, paperTone = 247 } = opts
+  const { size = 640, saturate = 1.18, edgeStrength = 1, paperTone = 247 } = opts
   const srcCanvas = await loadImageToCanvas(url)
 
   // painted：原图，微微提饱和。
@@ -249,7 +259,7 @@ export async function createArtTexturesFromImage(url, opts = {}) {
     pctx.putImageData(pimg, 0, 0)
   }
 
-  const sketch = toSketchCanvas(srcCanvas, { size, seed: opts.seed || 7, edgeStrength, paperTone })
+  const sketch = await toSketchCanvas(srcCanvas, { size, seed: opts.seed || 7, edgeStrength, paperTone })
   return { sketch, painted }
 }
 

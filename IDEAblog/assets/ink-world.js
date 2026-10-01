@@ -28,8 +28,10 @@
   /* ---------- 渲染器（失败则降级为静态封面） ---------- */
   var renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
   } catch (e) {
+    window.IDEA_GL_ERROR = String((e && (e.stack || e.message)) || e);
+    console.error("[idea-gl] renderer init failed", e);
     document.body.classList.add("idea-no-webgl");
     return;
   }
@@ -43,8 +45,10 @@
   renderer.outputEncoding = THREE.sRGBEncoding;
 
   var scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0d1822);
-  scene.fog = new THREE.FogExp2(0x13222e, 0.011);
+  // Canvas 保持透明，让首页的宣纸与青绿山水 CSS 底色参与构图；
+  // 山水本身仍沿用原来的路径动画和滚动节奏。
+  scene.background = null;
+  scene.fog = new THREE.FogExp2(0xc7cabe, 0.011);
 
   var camera = new THREE.PerspectiveCamera(58, 1, 0.1, 1200);
 
@@ -72,7 +76,7 @@
 
   var waterUniforms = {
     uTime: { value: 0 },
-    uFogColor: { value: new THREE.Color(0x13222e) },
+    uFogColor: { value: new THREE.Color(0xc7cabe) },
     uFogDensity: { value: 0.011 }
   };
 
@@ -111,15 +115,15 @@
       "varying float vWX;",
       "varying float vWY;",
       "void main(){",
-      "  vec3 deep = vec3(0.030, 0.055, 0.075);",
-      "  vec3 mid  = vec3(0.100, 0.150, 0.185);",
+      "  vec3 deep = vec3(0.18, 0.22, 0.20);",
+      "  vec3 mid  = vec3(0.42, 0.48, 0.40);",
       "  vec3 col = mix(deep, mid, smoothstep(-2.6, 2.6, vElev));",
       "  float crest = smoothstep(1.8, 2.8, vElev);",
-      "  col += vec3(0.38, 0.52, 0.60) * crest * 0.65;",
+      "  col += vec3(0.60, 0.68, 0.48) * crest * 0.52;",
       /* 月光湖道：月亮在水面拖出的反光光路（水墨湖泊的灵魂） */
       "  float band = exp(-pow((vWX - 24.0) / 26.0, 2.0));",
       "  float shimmer = 0.55 + 0.45 * sin(vWY * 0.55 + uTime * 1.6) * sin(vWX * 0.35 - uTime * 0.9);",
-      "  col += vec3(0.52, 0.62, 0.66) * band * shimmer * 0.30;",
+      "  col += vec3(0.82, 0.72, 0.42) * band * shimmer * 0.22;",
       "  float f = 1.0 - exp(-uFogDensity*uFogDensity*vViewZ*vViewZ);",
       "  col = mix(col, uFogColor, clamp(f, 0.0, 1.0));",
       "  gl_FragColor = vec4(col, 1.0);",
@@ -150,8 +154,8 @@
         + 0.10 * Math.sin(t * 6.283 * 9.3 + p3));
       pos.push(x, -14, 0, x, y, 0);
       /* 山脚青灰，山脊按 toneK 提亮（远山更淡更冷） */
-      col.push(0.030, 0.046, 0.062,
-               0.105 * toneK, 0.140 * toneK, 0.168 * toneK);
+      col.push(0.11, 0.14, 0.12,
+               0.24 * toneK, 0.31 * toneK, 0.24 * toneK);
       if (i < segs) {
         var a = i * 2;
         idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);

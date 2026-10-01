@@ -14,6 +14,7 @@ import {
   createWallTexture,
   createFloorTexture,
   createCeilingTexture,
+  createNightSkyTexture,
 } from '../utils/sketchTextures'
 import PictureFrame from './PictureFrame'
 
@@ -95,7 +96,7 @@ function StructureOutlines({ startZ, width, height, length, color, opacity }) {
  * 素描里这条线非常重要 —— 它把墙面和地面彻底分开，
  * 没有它，白墙和白地板会糊成一片。
  */
-function Baseboard({ side, startZ, length }) {
+function Baseboard({ side, startZ, length, theme = 'day' }) {
   const h = BASEBOARD_HEIGHT
   const x = side === 'left' ? -CORRIDOR_WIDTH / 2 + 0.014 : CORRIDOR_WIDTH / 2 - 0.014
   const rotY = side === 'left' ? Math.PI / 2 : -Math.PI / 2
@@ -105,12 +106,12 @@ function Baseboard({ side, startZ, length }) {
       {/* 踢脚线板面 */}
       <mesh position={[x, h / 2, startZ - length / 2]} rotation={[0, rotY, 0]}>
         <planeGeometry args={[length, h]} />
-        <meshBasicMaterial color="#dcd6c7" toneMapped={false} />
+        <meshBasicMaterial color={theme === 'night' ? '#1b3654' : '#dcd6c7'} toneMapped={false} />
       </mesh>
       {/* 踢脚线顶沿的墨线：素描里的"收口线" */}
       <mesh position={[x, h, startZ - length / 2]} rotation={[0, rotY, 0]}>
         <planeGeometry args={[length, 0.018]} />
-        <meshBasicMaterial color="#5a5348" toneMapped={false} />
+        <meshBasicMaterial color={theme === 'night' ? '#6c90ae' : '#5a5348'} toneMapped={false} />
       </mesh>
     </group>
   )
@@ -126,7 +127,7 @@ function Baseboard({ side, startZ, length }) {
  *   2. 在美术上给长廊一个"起点"，像画廊入口处的墙。
  * 位置在段起点之后 0.05，正面朝向走廊（rotation Y = π）。
  */
-function SegmentCap({ z, width, height }) {
+function SegmentCap({ z, width, height, theme = 'day' }) {
   const tex = useMemo(() => {
     const t = createWallTexture({ seed: 71 })
     t.repeat.set(width / 2.6, height / 2.6)
@@ -151,51 +152,67 @@ function SegmentCap({ z, width, height }) {
     <group position={[0, height / 2, z]}>
       <mesh rotation={[0, Math.PI, 0]}>
         <planeGeometry args={[width, height]} />
-        <meshBasicMaterial map={tex} color="#e8e4d8" toneMapped={false} />
+        <meshBasicMaterial map={tex} color={theme === 'night' ? '#102744' : '#e8e4d8'} toneMapped={false} />
       </mesh>
       {/* 一圈墨色边，让封口板读起来像"结构的端面" */}
       <lineSegments geometry={outline} frustumCulled={false}>
-        <lineBasicMaterial color="#4a453c" transparent opacity={0.5} depthWrite={false} toneMapped={false} />
+        <lineBasicMaterial
+          color={theme === 'night' ? '#83a7c8' : '#4a453c'}
+          transparent
+          opacity={theme === 'night' ? 0.38 : 0.5}
+          depthWrite={false}
+          toneMapped={false}
+        />
       </lineSegments>
     </group>
   )
 }
 
-export default function CorridorSegment({ segmentIndex, isEndSegment = false }) {
+// 这些面片在所有长廊分段里完全相同。白天与夜游各缓存一套，切换时
+// 只替换材质引用，不重复生成画框贴图，也不增加几何数量。
+const sharedMaterialsByTheme = new Map()
+
+function getSharedMaterials(theme = 'day') {
+  const cached = sharedMaterialsByTheme.get(theme)
+  if (cached) return cached
+
+  const wallTex = createWallTexture({ seed: theme === 'night' ? 17 : 11 })
+  wallTex.repeat.set(SEGMENT_LENGTH / 3.4, CORRIDOR_HEIGHT / 3.4)
+
+  const floorTex = createFloorTexture({ seed: 23 })
+  // 地板：沿 U（段长）铺 4 组，横向 V（宽度 9）铺 1.6 组。
+  floorTex.repeat.set(SEGMENT_LENGTH / 5, CORRIDOR_WIDTH / 5.6)
+
+  const ceilTex = theme === 'night'
+    ? createNightSkyTexture({ seed: 83, stars: 720 })
+    : createCeilingTexture({ seed: 37 })
+  ceilTex.repeat.set(SEGMENT_LENGTH / 4, CORRIDOR_WIDTH / 4)
+
+  const basic = (map, color = '#ffffff') =>
+    new THREE.MeshBasicMaterial({ map, color, toneMapped: false })
+
+  const materials = theme === 'night'
+    ? {
+        wall: basic(wallTex, '#122b49'),
+        floor: basic(floorTex, '#6b3030'),
+        ceiling: basic(ceilTex, '#ffffff'),
+      }
+    : {
+        wall: basic(wallTex, '#f6f3ec'),
+        floor: basic(floorTex, '#fdfcf8'),
+        ceiling: basic(ceilTex, '#f4f2ec'),
+      }
+
+  sharedMaterialsByTheme.set(theme, materials)
+  return materials
+}
+
+export default function CorridorSegment({ segmentIndex, isEndSegment = false, theme = 'day' }) {
   const startZ = CORRIDOR_START_Z - segmentIndex * SEGMENT_LENGTH
   const centerZ = startZ - SEGMENT_LENGTH / 2
 
-  // ---------------------------------------------------------------
-  // 共享贴图与材质。注意这里故意用 useMemo 空依赖：
-  // 长廊段本身是"同构复制"的，每段重新生成 3 张 512~1024px canvas
-  // 会带来明显卡顿。
-  // ---------------------------------------------------------------
-  const materials = useMemo(() => {
-    const wallTex = createWallTexture({ seed: 11 })
-    // repeat 的定法：一个 tile 覆盖约 2~3 个世界单位。
-    // （踩过坑：一张 512px 图铺在 20 单位长的墙上会被拉成巨大色块，
-    //   看上去就是一片纯色，完全没有质感。）
-    wallTex.repeat.set(SEGMENT_LENGTH / 3.4, CORRIDOR_HEIGHT / 3.4)
-
-    const floorTex = createFloorTexture({ seed: 23 })
-    // 地板：沿 U（段长）铺 4 组，横向 V（宽度 9）铺 1.6 组。
-    // 木地板是"横向长条"，所以 U 方向要重复得比 V 密。
-    floorTex.repeat.set(SEGMENT_LENGTH / 5, CORRIDOR_WIDTH / 5.6)
-
-    const ceilTex = createCeilingTexture({ seed: 37 })
-    ceilTex.repeat.set(SEGMENT_LENGTH / 4, CORRIDOR_WIDTH / 4)
-
-    // 全部用 MeshBasicMaterial：纸面不吃光照，所见即所得，
-    // 同时省掉每个像素的 PBR 计算（长廊面片很大，这个省法很值）。
-    const basic = (map, color = '#ffffff') =>
-      new THREE.MeshBasicMaterial({ map, color, toneMapped: false })
-
-    return {
-      wall: basic(wallTex, '#f6f3ec'),
-      floor: basic(floorTex, '#fdfcf8'),
-      ceiling: basic(ceilTex, '#f4f2ec'),
-    }
-  }, [])
+  // 所有分段共用这三套材质；分段只负责几何位置和画框内容。
+  const materials = useMemo(() => getSharedMaterials(theme), [theme])
 
   // ---------------------------------------------------------------
   // 画框排布：每段左右各 2 幅，左右交错
@@ -249,8 +266,8 @@ export default function CorridorSegment({ segmentIndex, isEndSegment = false }) 
       </mesh>
 
       {/* --- 踢脚线 --- */}
-      <Baseboard side="left" startZ={startZ} length={SEGMENT_LENGTH} />
-      <Baseboard side="right" startZ={startZ} length={SEGMENT_LENGTH} />
+      <Baseboard side="left" startZ={startZ} length={SEGMENT_LENGTH} theme={theme} />
+      <Baseboard side="right" startZ={startZ} length={SEGMENT_LENGTH} theme={theme} />
 
       {/* --- 结构描边 --- */}
       <StructureOutlines
@@ -258,17 +275,24 @@ export default function CorridorSegment({ segmentIndex, isEndSegment = false }) 
         width={CORRIDOR_WIDTH}
         height={CORRIDOR_HEIGHT}
         length={SEGMENT_LENGTH}
-        color="#4a453c"
-        opacity={0.4}
+        color={theme === 'night' ? '#86a8c5' : '#4a453c'}
+        opacity={theme === 'night' ? 0.34 : 0.4}
       />
 
       {/* --- 画框 --- */}
       {frames.map((f) => (
-        <PictureFrame key={f.key} artwork={f.artwork} position={f.position} rotation={f.rotation} />
+        <PictureFrame key={f.key} artwork={f.artwork} position={f.position} rotation={f.rotation} theme={theme} />
       ))}
 
       {/* --- 尽头封口（仅最后一段） --- */}
-      {isEndSegment && <SegmentCap z={startZ - 0.05} width={CORRIDOR_WIDTH} height={CORRIDOR_HEIGHT} />}
+      {isEndSegment && (
+        <SegmentCap
+          z={startZ - 0.05}
+          width={CORRIDOR_WIDTH}
+          height={CORRIDOR_HEIGHT}
+          theme={theme}
+        />
+      )}
     </group>
   )
 }
